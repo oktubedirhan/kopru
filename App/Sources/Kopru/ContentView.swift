@@ -123,7 +123,7 @@ private struct GameDetail: View {
     }
 
     private var graphicsSummary: String {
-        var parts = ["D3DMetal 4 (DirectX → Metal)"]
+        var parts = [(profile ?? GameProfile()).rendererDescription]
         if effectiveGraphics.metalHUD { parts.append("FPS göstergesi") }
         if let fps = effectiveGraphics.maxFPS { parts.append("en fazla \(fps) FPS") }
         return parts.joined(separator: " · ")

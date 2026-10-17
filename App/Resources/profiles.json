@@ -2,15 +2,28 @@
   "games": {
     "292030": {
       "name": "The Witcher 3: Wild Hunt — Remastered",
+      "directX": "12",
       "steamArguments": ["--launcher-skip"],
       "executable": "bin/x64_dx12/witcher3.exe",
       "saveDirectory": "%USERPROFILE%\\Documents\\The Witcher 3",
       "notes": "--launcher-skip: REDprelauncher, REDlauncher penceresini atlar. 2026-10-17'de Steam üzerinden D3DMetal 4 ile oynandı."
     },
+    "35140": {
+      "name": "Batman: Arkham Asylum Game of the Year Edition",
+      "directX": "9",
+      "executable": "Binaries/ShippingPC-BmGame.exe",
+      "notes": "Serinin ilk oyunu (2009). DirectX 9 + 32-bit: D3DMetal DX9'u desteklemiyor, grafik Wine'ın wined3d'si (OpenGL) ile; 32-bit (WoW64) yolu ilk kez deneniyor. Exe yolu ve save klasörü kurulumdan sonra doğrulanacak."
+    },
+    "200260": {
+      "name": "Batman: Arkham City - Game of the Year Edition",
+      "directX": "11",
+      "notes": "Serinin ikinci oyunu (2011). Henüz alınmadı. DirectX 9 ve 11 modu var."
+    },
     "208650": {
       "name": "Batman: Arkham Knight",
+      "directX": "11",
       "executable": "Binaries/Win64/BatmanAK.exe",
-      "notes": "Henüz kurulmadı; exe yolu ve save klasörü doğrulanmadı. DirectX 11. Denuvo Antitamper: Denuvo etkinleştirme sınırı yüzünden oyunu tek prefix'te (steam) tut."
+      "notes": "Serinin son oyunu (2015). Henüz kurulmadı; exe yolu ve save klasörü doğrulanmadı. Denuvo Antitamper: Denuvo etkinleştirme sınırı yüzünden oyunu tek prefix'te (steam) tut."
     }
   }
 }

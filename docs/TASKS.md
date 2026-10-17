@@ -374,6 +374,16 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - **Doğrulama:** 25/25 test (yeni: profil dosyası, kullanıcı ezmesi/bozuk dosya, `%USERPROFILE%`, yol seçimi, Steam/doğrudan planları, Wine ek ortamı). Gerçek Wine'da çalışma klasörü eşlemesi: Steam klasörü → `C:\Program Files (x86)\Steam`, exe klasörü → `C:\…\The Witcher 3\bin\x64_dx12`. Uygulama görüntüsü: Başlatma seçimi ve profil argümanları görünüyor.
 - **Denenmedi:** doğrudan başlatma ile gerçek bir oyun (Witcher 3 ya da Batman) — `steam_api`'nin SteamAppId ile açık Steam'e bağlanması, doğrudan modda Steam Cloud'un kapanışta eşitleyip eşitlemediği, oyuna özel FPS ayarının etkisi. Kullanıcı testine eklendi.
 
+## 2026-10-17 — Batman sırası: önce Arkham Asylum (hazırlık)
+- Kullanıcı Arkham Knight'ı satın aldı (henüz indirilmedi). Sonra seriye çıkış sırasıyla başlamak istedi: **Asylum (2009) → City (2011) → Origins (2013) → Knight (2015)**. İlk hedef Asylum.
+- Köprü ve Steam kullanıcı isteğiyle yeniden başlatıldı (Steam `-shutdown` ~8 sn, yeniden giriş ~20 sn).
+- Araştırma (Steam API + ProtonDB):
+  - **Asylum GOTY** (AppID 35140): $2.99, ~8 GB, DRM yok (eski GFWL kaldırılmış), **DirectX 9, 32-bit**. ProtonDB Gold (en iyi Platinum), 492 rapor.
+  - **City GOTY** (200260): $3.99, 17 GB, DRM yok, DX9.0c (+DX11 modu). ProtonDB Gold/Platinum, 277 rapor.
+- **Teknik anlamı:** D3DMetal paketinde `d3d9` yok (yalnızca 10/11/12) → Asylum'da çeviri Wine'ın **wined3d**'si: DX9 → OpenGL → (Apple'ın OpenGL'i Metal üstünde). Bizde wined3d'nin OpenGL yolu çalışıyor (Aşama 2b, `--no-d3dmetal` ile DX11 FL 10.1). 32-bit (WoW64) yolu **ilk kez** denenecek (plan D2). FPS sınırı (`D3DM_MAX_FPS`) wined3d'de etkisiz; Metal HUD OpenGL'de görünür mü bilinmiyor.
+- Profiller: `directX` alanı eklendi; Asylum (35140, `Binaries/ShippingPC-BmGame.exe`, doğrulanmadı), City (200260, alınmadı), Knight (DX11). Arayüzün "Grafik" satırı artık DirectX sürümüne göre: DX9 → "wined3d (OpenGL)", 10–12 → "D3DMetal 4". 26/26 test.
+- **Sıradaki:** kullanıcı Asylum'u alıp Köprü'nün Steam'inden kurar (~8 GB) → exe/launcher yolunu doğrula → ilk açılış (BmLauncher, DX9/wined3d, 32-bit).
+
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 güncellemesi)
 - Witcher 3 (build 25773555) **çalışıyor**: Steam açıkken `scripts/kwine steam 'C:\Program Files (x86)\Steam\steam.exe' -applaunch 292030 --launcher-skip`. Orijinal Steam dosyaları, proxy yok.

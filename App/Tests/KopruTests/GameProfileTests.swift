@@ -15,6 +15,14 @@ struct GameProfileTests {
         #expect(profiles["292030"]?.steamArguments == ["--launcher-skip"])
         #expect(profiles["292030"]?.executable == "bin/x64_dx12/witcher3.exe")
         #expect(profiles["208650"]?.executable == "Binaries/Win64/BatmanAK.exe")
+        #expect(profiles["35140"]?.directX == "9")
+    }
+
+    @Test("Grafik yolu açıklaması DirectX sürümüne göre")
+    func renderer() {
+        #expect(GameProfile(directX: "9").rendererDescription.contains("wined3d"))
+        #expect(GameProfile(directX: "11").rendererDescription.contains("D3DMetal"))
+        #expect(GameProfile().rendererDescription.contains("D3DMetal"))
     }
 
     @Test("Kullanıcı dosyası alan alan ezer, ortam değişkenleri birleşir; bozuk dosya raporlanır")

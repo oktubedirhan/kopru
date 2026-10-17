@@ -10,6 +10,8 @@ struct GameProfile: Codable, Equatable, Sendable {
     }
 
     var name: String?
+    /// Oyunun DirectX sürümü ("9", "11", "12"). D3DMetal yalnızca 10–12'yi çevirir; 9 Wine'ın wined3d'sine (OpenGL) düşer.
+    var directX: String?
     /// -applaunch <appid> sonrasına eklenen argümanlar
     var steamArguments: [String]?
     /// Kurulum klasörüne göre exe yolu ("/" ile), doğrudan başlatma için
@@ -23,9 +25,19 @@ struct GameProfile: Codable, Equatable, Sendable {
     var saveDirectory: String?
     var notes: String?
 
+    /// Arayüzde gösterilen grafik yolu
+    var rendererDescription: String {
+        switch directX {
+        case "9": "DirectX 9 → wined3d (OpenGL)"
+        case let v?: "DirectX \(v) → D3DMetal 4 (Metal)"
+        case nil: "D3DMetal 4 (DirectX 10–12) / wined3d (DirectX 9 ve öncesi)"
+        }
+    }
+
     /// Diğer profildeki dolu alanlar bu profildekilerin yerine geçer (kullanıcı dosyası paketteki varsayılanı ezer).
     func merged(with other: GameProfile) -> GameProfile {
         GameProfile(name: other.name ?? name,
+                    directX: other.directX ?? directX,
                     steamArguments: other.steamArguments ?? steamArguments,
                     executable: other.executable ?? executable,
                     arguments: other.arguments ?? arguments,
