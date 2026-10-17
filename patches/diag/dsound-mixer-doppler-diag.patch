@@ -1,0 +1,113 @@
+diff -ru a/dlls/dsound/mixer.c b/dlls/dsound/mixer.c
+--- a/dlls/dsound/mixer.c	2026-10-17 16:19:14
++++ b/dlls/dsound/mixer.c	2026-10-17 16:19:14
+@@ -41,6 +41,7 @@
+ #include "fir.h"
+ 
+ WINE_DEFAULT_DEBUG_CHANNEL(dsound);
++WINE_DECLARE_DEBUG_CHANNEL(kopru);
+ 
+ void DSOUND_RecalcVolPan(PDSVOLUMEPAN volpan)
+ {
+@@ -692,6 +693,27 @@
+ 	device->playpos += device->pad - pad_bytes;
+ 	device->playpos %= device->buflen;
+ 	device->pad = pad_bytes;
++
++	{ /* KOPRU-DIAG: karistirici zamanlamasi, saniyede bir */
++		static LARGE_INTEGER freq, last, win;
++		static DWORD mixes, maxgap_us, minpad = ~0u, under;
++		LARGE_INTEGER now;
++		if (!freq.QuadPart) QueryPerformanceFrequency(&freq);
++		QueryPerformanceCounter(&now);
++		if (last.QuadPart) {
++			DWORD gap = (DWORD)((now.QuadPart - last.QuadPart) * 1000000 / freq.QuadPart);
++			if (gap > maxgap_us) maxgap_us = gap;
++		} else win = now;
++		last = now; mixes++;
++		if (pad_frames < minpad) minpad = pad_frames;
++		if (!pad_frames) under++;
++		if (now.QuadPart - win.QuadPart >= freq.QuadPart) {
++			TRACE_(kopru)("mix/s %lu maxgap %lu us minpad %lu fr (%lu ms) underrun %lu ac_frames %lu frag %lu\n",
++				mixes, maxgap_us, minpad, minpad * 1000 / device->pwfx->nSamplesPerSec, under,
++				device->ac_frames, device->frag_frames);
++			win = now; mixes = 0; maxgap_us = 0; minpad = ~0u; under = 0;
++		}
++	}
+ 
+ 	frames = device->ac_frames - pad_frames;
+ 	if(!frames){
+diff -ru a/dlls/dsound/primary.c b/dlls/dsound/primary.c
+--- a/dlls/dsound/primary.c	2026-10-17 16:19:14
++++ b/dlls/dsound/primary.c	2026-10-17 16:19:14
+@@ -36,6 +36,7 @@
+ #include "dsound_private.h"
+ 
+ WINE_DEFAULT_DEBUG_CHANNEL(dsound);
++WINE_DECLARE_DEBUG_CHANNEL(kopru);
+ 
+ static DWORD speaker_config_to_channel_mask(DWORD speaker_config)
+ {
+@@ -330,6 +331,9 @@
+     aclen_frames = min(acbuf_frames, 3 * frag_frames);
+ 
+     TRACE("period %lu ms frag_frames %lu buf_frames %u\n", period_ms, frag_frames, aclen_frames);
++    TRACE_(kopru)("KOPRU-DIAG fmt %lu Hz %u bit %u ch tag %#x, period %s (%lu ms) frag %lu acbuf %u aclen %u forcewave %d\n",
++        wfx->nSamplesPerSec, wfx->wBitsPerSample, wfx->nChannels, wfx->wFormatTag,
++        wine_dbgstr_longlong(period), period_ms, frag_frames, acbuf_frames, aclen_frames, forcewave);
+ 
+     hres = DSOUND_PrimaryOpen(device, wfx, aclen_frames, forcewave);
+     if(FAILED(hres))
+diff -ru a/dlls/dsound/sound3d.c b/dlls/dsound/sound3d.c
+--- a/dlls/dsound/sound3d.c	2026-10-17 16:19:14
++++ b/dlls/dsound/sound3d.c	2026-10-17 16:19:14
+@@ -53,6 +53,7 @@
+ #define DEFAULT_VELOCITY 360
+ 
+ WINE_DEFAULT_DEBUG_CHANNEL(dsound3d);
++WINE_DECLARE_DEBUG_CHANNEL(kopru);
+ 
+ /*******************************************************************************
+  *              Auxiliary functions
+@@ -308,9 +309,28 @@
+ 
+ 	dsb->freq = dsb->ds3db_freq;
+ 
++	/* KOPRU-DIAG: 3D hesap sayisi ve Doppler perde degisimi; KOPRU_DSOUND_NODOPPLER=1 Doppler'i kapatir */
++	static int kopru_nodoppler = -1;
++	static DWORD kopru_win, kopru_calls, kopru_doppler, kopru_maxshift;
++	if (kopru_nodoppler < 0) {
++		char v[8] = "";
++		GetEnvironmentVariableA("KOPRU_DSOUND_NODOPPLER", v, sizeof(v));
++		kopru_nodoppler = (v[0] == '1');
++		TRACE_(kopru)("KOPRU-DIAG nodoppler=%d\n", kopru_nodoppler);
++	}
++	kopru_calls++;
++	if (GetTickCount() - kopru_win >= 1000) {
++		TRACE_(kopru)("3d/s %lu doppler/s %lu maxshift %lu.%lu%% buffers %d\n", kopru_calls, kopru_doppler,
++			kopru_maxshift / 10, kopru_maxshift % 10, dsb->device->nrofbuffers);
++		kopru_win = GetTickCount(); kopru_calls = kopru_doppler = kopru_maxshift = 0;
++	}
++
+ 	/* doppler shift*/
+-	if (!VectorMagnitude(&dsb->ds3db_ds3db.vVelocity) && !VectorMagnitude(&dsb->device->ds3dl.vVelocity))
++	if (kopru_nodoppler)
+ 	{
++	}
++	else if (!VectorMagnitude(&dsb->ds3db_ds3db.vVelocity) && !VectorMagnitude(&dsb->device->ds3dl.vVelocity))
++	{
+ 		TRACE("doppler: Buffer and Listener don't have velocities\n");
+ 	}
+ 	else if (!(vRelativeVel.x == 0.0f && vRelativeVel.y == 0.0f && vRelativeVel.z == 0.0f) &&
+@@ -327,6 +347,11 @@
+ 		TRACE("doppler: Relative velocity (component) = %f => Doppler shift: %ld Hz -> %f Hz\n",
+ 		      flRelativeVel, dsb->ds3db_freq, flFreq);
+ 		dsb->freq = max(DSBFREQUENCY_MIN, min(DSBFREQUENCY_MAX, (DWORD)flFreq));
++		{
++			DWORD shift = (DWORD)(fabsf(flFreq / dsb->ds3db_freq - 1.0f) * 1000.0f);
++			kopru_doppler++;
++			if (shift > kopru_maxshift) kopru_maxshift = shift;
++		}
+ 	}
+ 
+ 	DSOUND_RecalcFormat(dsb);

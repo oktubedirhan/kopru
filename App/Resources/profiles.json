@@ -12,8 +12,8 @@
       "name": "Batman: Arkham Asylum Game of the Year Edition",
       "directX": "9",
       "executable": "Binaries/BmLauncher.exe",
-      "saveDirectory": "%USERPROFILE%\\Documents\\Square Enix\\Batman Arkham Asylum GOTY\\SaveData",
-      "notes": "Serinin ilk oyunu (2009). DirectX 9 + 32-bit: grafik Wine'ın wined3d'si (OpenGL), D3DMetal yok. Oyun (ShippingPC-BmGame.exe) başlatıcı olmadan açılmaz, kendisi BmLauncher'ı çağırır; BmLauncher .NET programı, Wine Mono gerekir. 2026-10-17'de çalıştı: menü ve ses."
+      "saveDirectory": "%STEAMUSERDATA%\\35140\\remote",
+      "notes": "Serinin ilk oyunu (2009). DirectX 9 + 32-bit: grafik Wine'ın wined3d'si (OpenGL), D3DMetal yok. Oyun (ShippingPC-BmGame.exe) başlatıcı olmadan açılmaz, kendisi BmLauncher'ı çağırır; BmLauncher .NET programı, Wine Mono gerekir. Çözünürlük masaüstüyle aynı olmalı (yoksa fare ekranın bir kısmında kalır). Kayıt Steam Cloud klasöründe (Save0.sgd). Bilinen sorun: oyun içinde ses cızırtılı/dalgalı."
     },
     "200260": {
       "name": "Batman: Arkham City - Game of the Year Edition",

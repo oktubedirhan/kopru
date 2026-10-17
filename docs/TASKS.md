@@ -408,7 +408,37 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - **profiles.json (35140):** `executable` → `Binaries/BmLauncher.exe` (oyun exe'si tek başına açılmadığı için doğrudan modda da başlatıcı), `saveDirectory` eklendi. Test genişletildi, 29/29.
 - **Not:** Şu an açık olan Steam eski ortamla (mscoree kapalı) başlatılmıştı; Steam üzerinden Asylum için Steam'in yeniden başlatılması gerek.
 
+## 2026-10-17 — Asylum: fare düzeldi ✅, save yeri bulundu ✅, ses sorunu açık ❌ (ara verildi)
+- **Fare yalnızca ekranın üst ~2/3'ünde (kullanıcı):** menüde "Exit"e inilemedi (oyun Dock'tan kapatıldı).
+  - Ekranlar (`NSScreen`): dahili Retina **1312×848** nokta (kullanıcının normal ayarı) + harici A32 V2 2560×1440 @144 Hz (üstte). BmLauncher ise `BmEngine.ini [SystemSettings]` içine **1728×1117** yazmıştı (dahili panelin "varsayılan" ölçekli modu).
+  - Wine Mac'in çözünürlüğünü değiştirmedi (oyun sırasında da 1312×848). Oyun 1728×1117 sanıp çiziyor, Wine görüntüyü küçültüyor, fare koordinatları ölçeklenmiyor → 848/1117 ≈ %76.
+  - **Çözüm (çalıştı, kullanıcı doğruladı):** `ResX=1312`, `ResY=848` (CRLF korunarak; yedek `BmEngine.ini.kopru-1728x1117.bak` aynı klasörde). Fare her yere gidiyor. Not: BmLauncher'da ayar değiştirilirse geri yazabilir.
+  - Öğrenilen: ini'ler `~/Documents/Square Enix/…/BmGame/Config/`, ASCII + CRLF. `awk` birden fazla dosyada `NR`'yi toplam sayıyor, satır numarası için `FNR` kullan.
+- **Save yeri (düzeltme):** `Documents/…/SaveData` boş kaldı. Asıl kayıt Steam Cloud API ile **`Steam/userdata/1053270386/35140/remote/Save0.sgd`** (16:15'te kullanıcının oyunuyla güncellendi) + `profile.bin` (2023 tarihli, Steam Cloud'dan indi).
+  - `Paths.steamUserData` + yer tutucu **`%STEAMUSERDATA%`** (= `C:\Program Files (x86)\Steam\userdata\<hesap>`, en son değişen hesap, `0` atlanır). Profil: `%STEAMUSERDATA%\35140\remote`. Yeni test; 30/30.
+  - Uygulama görüntüsü (`--select 35140 --snapshot`): Asylum "Çalışıyor", Grafik "DirectX 9 → wined3d (OpenGL)", Kayıtlar satırı + Şimdi Yedekle/Save Klasörü görünüyor. **Gerçek yedek alma (düğme ya da Oyna) denenmedi.**
+- **Ses: oyun içinde cızırtı + dalgalanma + hafif gecikme**, konuşma/müzik/efekt hepsinde; menüde yoktu. Görüntüde de ufak takılmalar. Çözünürlük düşünce değişmedi (GPU yükü değil).
+  - Oyun sesi **DirectSound** ile veriyor (`lsof`: `dsound.dll`, `winecoreaudio`); çıkış MacBook hoparlörü 48 kHz (HDMI/Bluetooth değil). PhysX kapalı (`PhysXLevel=0`).
+  - `WINEDEBUG=warn+dsound`: ~1 dk'da 4 `Probable buffer underrun`, zaman aşımı uyarısı yok.
+  - **Geçici ölçüm yaması** (`kopru` kanalı, mixer.c/primary.c): aygıt 48 kHz float stereo, dönem 26 ms (frag 1240, aclen 3720 kare); karıştırıcı saniyede ~100 kez, en uzun ara ~11 ms; tamponda **en az 56–67 ms** ses. → Wine → CoreAudio akışı sağlıklı, **"tampon küçük" tahmini yanlıştı.** Bozukluk karışımın içinde.
+  - Sıradaki hipotez: **DirectSound3D Doppler**. Wine `sound3d.c` 3D seslerde hız farkına göre perdeyi değiştiriyor; oyun hızları kare süresinden hesaplıyorsa takılmalar perdeyi sürekli oynatır (dalgalanma). Diğer adaylar: her karede ses şiddeti adımları (rampa yok → cızırtı), `SetFrequency` sıklığı.
+  - Hazır deney: `patches/diag/dsound-mixer-doppler-diag.patch` (**otomatik uygulanmaz**). İçinde karıştırıcı ölçümü + `3d/s doppler/s maxshift %` ölçümü + `KOPRU_DSOUND_NODOPPLER=1` ile Doppler'i kapatma. Derlendi ama oyunla **denenmedi** (kullanıcı ara verdi).
+  - Runtime ve kaynak **orijinal haline döndürüldü** (kurulu i386 `dsound.dll` 03:52 tarihli asıl dosya; kaynakta `kopru` yok).
+- Arama: Asylum'a özel bir Wine ses çözümü bulunamadı.
+
 ---
+## 📌 Yeni oturum için özet (2026-10-17 akşam: Batman AA)
+- **Asylum (35140) çalışıyor, ses bozuk.** Başlatma: `cd …/Batman Arkham Asylum GOTY/Binaries && SteamAppId=35140 SteamGameId=35140 scripts/kwine steam "$PWD/BmLauncher.exe"` → başlatıcıda Play. Wine Mono 10.4.1 prefix'te kurulu, `wine.env`'de `mscoree` artık kapalı değil.
+- **Steam yeniden başlatılmalı:** açık Steam eski ortamla (mscoree kapalı) başladı; Steam/Köprü "Oyna" ile Asylum açmak için önce Steam'i kapatıp aç (Köprü'de Steam'i Kapat → Aç).
+- **Ses deneyi (sıradaki iş):**
+  1. `cd ~/.kopru/src/crossover-26.3/sources/wine && patch -p1 < ~/Documents/Codex/Kopru/patches/diag/dsound-mixer-doppler-diag.patch`
+  2. `scripts/build-crossover-wine.sh build`; Steam açıkken tam install yapma, yalnızca `build/dlls/dsound/i386-windows/dsound.dll` → `llvm-strip --strip-debug` → `runtime/.../lib/wine/i386-windows/dsound.dll` (`mv` ile; önce asıl dosyanın yedeği).
+  3. A: `WINEDEBUG=err+all,+kopru` ile oyna → `3d/s`, `doppler/s`, `maxshift` değerleri. B: `KOPRU_DSOUND_NODOPPLER=1` ile oyna → kullanıcı kulakla karşılaştırır.
+  4. Doppler suçluysa kalıcı yama (0007): Doppler'i yumuşatma ya da kapatma seçeneği. Değilse ses şiddeti değişimlerine (rampa) bak.
+  5. Sonunda kaynağı `patch -R` ile geri al, asıl DLL'i geri koy.
+- **Yedek testi:** Köprü'de Asylum → "Şimdi Yedekle" → `~/.kopru/backups/35140/<tarih>/remote/Save0.sgd` oluşmalı.
+- Witcher 3 "Kayıtlar" satırı kontrolü (önceki listeden) hâlâ yapılmadı.
+
 ## 📌 Yeni oturum için özet (2026-10-17 güncellemesi)
 - Witcher 3 (build 25773555) **çalışıyor**: Steam açıkken `scripts/kwine steam 'C:\Program Files (x86)\Steam\steam.exe' -applaunch 292030 --launcher-skip`. Orijinal Steam dosyaları, proxy yok.
 - Save'ler: `~/Documents/The Witcher 3/` (prefix'in Documents'ı Mac'e symlink). Yedek: `~/.kopru/backups/witcher3-saves-2026-10-17/`. Steam Cloud açık ve eşit.

@@ -18,7 +18,23 @@ struct GameProfileTests {
         #expect(profiles["35140"]?.directX == "9")
         // Asylum'un exe'si başlatıcısız açılmıyor: doğrudan başlatmada da BmLauncher çalışmalı.
         #expect(profiles["35140"]?.executable == "Binaries/BmLauncher.exe")
-        #expect(profiles["35140"]?.saveDirectory?.hasSuffix("Batman Arkham Asylum GOTY\\SaveData") == true)
+        #expect(profiles["35140"]?.saveDirectory == #"%STEAMUSERDATA%\35140\remote"#)
+    }
+
+    @Test("%STEAMUSERDATA%: en son değişen hesap klasörü, \"0\" ve sayı olmayanlar atlanır")
+    func steamUserDataPath() throws {
+        let fx = try Fixture(); defer { fx.remove() }
+        let fm = FileManager.default
+        let userdata = fx.paths.steamDir.appending(path: "userdata")
+        for (name, age) in [("0", 0.0), ("111", 100.0), ("222", 50.0), ("ac_cache", 0.0)] {
+            let dir = userdata.appending(path: name)
+            try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+            try fm.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -age)], ofItemAtPath: dir.path)
+        }
+        #expect(Paths.steamUserData(inPrefix: fx.paths.steamPrefix) == #"C:\Program Files (x86)\Steam\userdata\222"#)
+        let url = Paths.resolve(windowsPath: #"%STEAMUSERDATA%\35140\remote"#, inPrefix: fx.paths.steamPrefix)
+        #expect(url?.resolvingSymlinksInPath().path
+                == userdata.appending(path: "222/35140/remote").resolvingSymlinksInPath().path)
     }
 
     @Test("Grafik yolu açıklaması DirectX sürümüne göre")

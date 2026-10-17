@@ -3,7 +3,7 @@
 Windows oyunlarını Apple Silicon Mac'te çalıştıran, kişisel kullanım için yazılmış bir başlatıcı. Amaç hem çalışan bir araç elde etmek hem de bu tür araçların (Wine, D3DMetal, CrossOver, GameToMac) nasıl çalıştığını adım adım öğrenmek.
 
 - **Dağıtım yok.** Yalnızca bu bilgisayarda kullanılır.
-- **Çalışan oyun:** The Witcher 3 (Steam, DX12, D3DMetal 4). Yeni oyunlar (Elden Ring, RDR2…) şimdilik rafta.
+- **Çalışan oyunlar:** The Witcher 3 (Steam, DX12, D3DMetal 4); Batman: Arkham Asylum (DX9 → wined3d/OpenGL, 32-bit; ses sorunu açık). Yeni oyunlar (Elden Ring, RDR2…) şimdilik rafta.
 - **Referans:** `/Applications/GameToMac.app/Contents/Resources/Sources/` içindeki kod ve belgeler okunur, anlaşılır; kopyalanmaz.
 
 ## Katmanlar

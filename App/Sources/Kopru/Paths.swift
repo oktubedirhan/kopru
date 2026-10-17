@@ -44,12 +44,31 @@ struct Paths: Sendable {
         return names.sorted().first { $0 != "Public" && !$0.hasPrefix(".") }.map { #"C:\users\"# + $0 }
     }
 
-    /// %USERPROFILE% içeren Windows yolunu Mac yoluna çevirir (save klasörleri için).
+    /// Steam'in hesap klasörü: Steam\userdata\<hesap numarası>. Steam Cloud kullanan oyunların bir kısmı
+    /// (ör. Batman AA) kaydını doğrudan burada <appid>\remote altına yazar. Birden fazla hesap varsa
+    /// en son değişen seçilir; "0" (girişten önceki geçici klasör) atlanır. Windows yolu olarak döner.
+    static func steamUserData(inPrefix prefix: URL) -> String? {
+        let userdata = prefix.appending(path: "drive_c/Program Files (x86)/Steam/userdata")
+        let items = (try? FileManager.default.contentsOfDirectory(
+            at: userdata, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
+        let accounts = items.filter { $0.lastPathComponent != "0" && UInt64($0.lastPathComponent) != nil }
+        func modified(_ url: URL) -> Date {
+            (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+        }
+        return accounts.max { modified($0) < modified($1) }
+            .map { #"C:\Program Files (x86)\Steam\userdata\"# + $0.lastPathComponent }
+    }
+
+    /// %USERPROFILE% ya da %STEAMUSERDATA% içeren Windows yolunu Mac yoluna çevirir (save klasörleri için).
     static func resolve(windowsPath: String, inPrefix prefix: URL) -> URL? {
         var path = windowsPath
         if path.contains("%USERPROFILE%") {
             guard let profile = windowsUserProfile(inPrefix: prefix) else { return nil }
             path = path.replacingOccurrences(of: "%USERPROFILE%", with: profile)
+        }
+        if path.contains("%STEAMUSERDATA%") {
+            guard let userdata = steamUserData(inPrefix: prefix) else { return nil }
+            path = path.replacingOccurrences(of: "%STEAMUSERDATA%", with: userdata)
         }
         return unixPath(forWindowsPath: path, inPrefix: prefix)
     }
