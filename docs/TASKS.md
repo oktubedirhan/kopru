@@ -462,6 +462,7 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - İndirildi: 16 oyun, 8,2 MB (CS2 zaten Steam önbelleğinde). Heroes III (4921760): adresler 404, header.jpg ile geldi; numara **doğrulandı** (Ubisoft, 25 Ağustos 2026), profil notu düzeltildi.
 - Kurulu olmayan oyun sayfasında da logo büyük görselin üstünde. Seçim değişince satır ekrana kaydırılıyor (`ScrollViewReader`).
 - Öğrenilen: `--snapshot` denemelerinde yanlış oyunun seçilmesi uygulama hatası değildi: `open -n` pencereyi öne getiriyor, o sırada klavyeden gelen harfler listede "yazarak seç" yapıyordu. `open -g -n` ile 3/3 doğru.
+- Öğrenilen: `pkill -f "Köprü.app/…"` hiçbir süreci yakalamadı (süreç listesinde ö/ü farklı Unicode biçiminde) → 10 test penceresi açık kalmıştı. ASCII parça kullan: `pkill -f "MacOS/Kopru"`.
 - Test 32/32.
 
 ---
