@@ -465,6 +465,10 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - Öğrenilen: `pkill -f "Köprü.app/…"` hiçbir süreci yakalamadı (süreç listesinde ö/ü farklı Unicode biçiminde) → 10 test penceresi açık kalmıştı. ASCII parça kullan: `pkill -f "MacOS/Kopru"`.
 - Test 32/32.
 
+## 2026-10-18 — Kurulum rehberi (docs/KURULUM.md) ✅ yazıldı, ❌ başka Mac'te denenmedi
+- Kullanıcı: GitHub sayfasında nasıl kurulacağı yazsın. `docs/KURULUM.md`: gerekenler, Rosetta/Xcode/Homebrew, clone, runtime (A: diğer Mac'ten kopyala, B: kaynak + llvm-mingw + GPTK Wine 3.0-3 kütüphaneleri → `build-crossover-wine.sh all`), D3DMetal 4.0b3 (kullanıcı indirir), `d3dmetal-hook`, Wine Mono, Steam prefix'i, uygulama, doğrulama. README'ye kısa "Kurulum" bölümü + bağlantı.
+- Kaynaklar bu dosyadaki eski girişlerden (indirme adresleri, sürümler, SHA-256'lar). Sıfırdan bir Mac'te baştan sona **denenmedi**; özellikle Gcenx paketinin klasör düzeni ve Mono'nun kendiliğinden kurulması doğrulanmalı.
+
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 akşam: Batman AA)
 - **Asylum (35140) çalışıyor, ses bozuk.** Başlatma: `cd …/Batman Arkham Asylum GOTY/Binaries && SteamAppId=35140 SteamGameId=35140 scripts/kwine steam "$PWD/BmLauncher.exe"` → başlatıcıda Play. Wine Mono 10.4.1 prefix'te kurulu, `wine.env`'de `mscoree` artık kapalı değil.
