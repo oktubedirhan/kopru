@@ -4,7 +4,7 @@
 
 ## Kullanıcı ve amaç
 - Kullanıcıyla Türkçe, kısa ve anlaşılır konuş. Kullanıcı bu alanı öğreniyor: her adımda **ne yaptığını ve neden** bir iki cümleyle açıkla, yeni kavramları (prefix, DLL override, D3DMetal vb.) ilk geçtiği yerde tanımla.
-- Amaç öğrenmek ve kişisel kullanım. Proje dağıtılmayacak.
+- Amaç öğrenmek ve kişisel kullanım. Kaynak kod GitHub'da herkese açık (2026-10-18, kullanıcı kararı); hazır paket (derlenmiş Wine, D3DMetal, oyun dosyası) dağıtılmaz. Depoya Apple, GameToMac ya da oyun dosyası, şifre/token koyma.
 - Adım adım ilerle; her aşamayı çalışır halde bırak. Aşama bitince dur, sonucu ve sıradaki adımı `docs/TASKS.md` içine yaz.
 
 ## GameToMac referansı

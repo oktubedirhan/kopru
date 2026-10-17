@@ -3,7 +3,7 @@
 Bu rehber, Köprü'yü sıfırdan bir Apple Silicon Mac'e kurmanın adımlarını anlatır. Adımların hepsi bu projenin geliştirildiği
 Mac'te (M2 Pro, macOS 27.0.1) yapıldı; başka bir Mac'te **henüz denenmedi**.
 
-> Köprü kişisel kullanım içindir, dağıtılmaz. Oyunlar kendi Steam hesabından; D3DMetal'i (Apple'ın Game Porting Toolkit'i)
+> Köprü kişisel kullanım içindir; kaynak kod açık, hazır paket dağıtılmaz. Oyunlar kendi Steam hesabından; D3DMetal'i (Apple'ın Game Porting Toolkit'i)
 > herkes Apple'dan **kendisi** indirir, kopyası paylaşılmaz.
 
 ## 0. Gerekenler
@@ -12,7 +12,7 @@ Mac'te (M2 Pro, macOS 27.0.1) yapıldı; başka bir Mac'te **henüz denenmedi**.
 |---|---|
 | Mac | Apple Silicon (M1 ve sonrası), macOS 15 veya üstü |
 | Disk | Kurulum ~5 GB (derleme dahil ~10 GB) + oyunlar |
-| Hesaplar | GitHub (depo özel), Apple Developer (ücretsiz hesap yeter), Steam |
+| Hesaplar | Apple Developer (ücretsiz hesap yeter), Steam |
 | Araçlar | Xcode (App Store'dan) veya Xcode Command Line Tools, Homebrew |
 
 Bütün Köprü dosyaları `~/Library/Application Support/Kopru/` altında durur. Kısa adı `~/.kopru` (derleme script'i bu
@@ -42,7 +42,6 @@ git clone https://github.com/oktubedirhan/kopru.git Kopru
 cd Kopru
 ```
 
-Depo özel: `git clone` GitHub girişi ister (`gh auth login` ya da tarayıcıdan token).
 
 ## 3. Wine runtime — iki yol
 
