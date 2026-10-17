@@ -7,7 +7,10 @@ import Observation
 final class AppModel {
     let paths = Paths()
     private(set) var games: [InstalledGame] = []
-    var selection: InstalledGame.ID?
+    /// Profili olan ama kurulu olmayan oyunlar
+    private(set) var available: [AvailableGame] = []
+    /// Seçili oyunun AppID'si (kurulu ya da kurulu değil)
+    var selection: String?
     private(set) var status = ProcessScanner.Snapshot()
     /// Başlatma komutu gönderilmiş ama süreci henüz görünmeyen oyunlar.
     private(set) var launching: [String: Date] = [:]
@@ -45,6 +48,7 @@ final class AppModel {
     }
 
     var selectedGame: InstalledGame? { games.first { $0.id == selection } }
+    var selectedAvailable: AvailableGame? { available.first { $0.id == selection } }
 
     func profile(for game: InstalledGame) -> GameProfile? { profiles[game.appID] }
 
@@ -115,7 +119,8 @@ final class AppModel {
         }
         if let problem = loaded.problem { message = problem }
         games = SteamLibrary.load(paths: paths)
-        if selectedGame == nil { selection = games.first?.id }
+        available = SteamLibrary.available(profiles: profiles, installed: games, imageCache: paths.steamLibraryCache)
+        if selectedGame == nil && selectedAvailable == nil { selection = games.first?.id ?? available.first?.id }
         lastBackups = Dictionary(uniqueKeysWithValues: games.compactMap { game in
             SaveBackup.list(appID: game.appID, in: paths.backups).first.map { (game.appID, $0) }
         })
@@ -212,6 +217,34 @@ final class AppModel {
                 return
             }
             openSteam()
+        }
+    }
+
+    /// Kurulu olmayan oyun için Steam'e bağlantı gönderir: steam://install (hesapta varsa kurulum penceresi)
+    /// ya da steam://store (mağaza sayfası). Steam açıksa komut açık Steam'e geçer, kapalıysa Steam onunla açılır.
+    func openInSteam(_ game: AvailableGame, install: Bool) {
+        var args = [Paths.steamExeWindows]
+        if !status.steamRunning {
+            steamSettings = settings
+            args.append("-cef-disable-gpu")
+        }
+        args.append("steam://\(install ? "install" : "store")/\(game.appID)")
+        let plan = LaunchPlan(mode: .steam, arguments: args, workingDirectory: paths.steamDir,
+                              extraEnvironment: [:], graphics: settings)
+        run(plan, log: "steam", done: install
+            ? "Steam'de \(game.name) kurulum penceresi açılıyor. Oyun hesabında yoksa Steam bunu söyler; o zaman Mağaza Sayfası'na bak."
+            : "Steam'de \(game.name) mağaza sayfası açılıyor.")
+        guard install else { return }
+        // Kurulum başlayınca Steam appmanifest yazar; o zaman oyun "Kurulu" bölümüne geçsin (en fazla ~10 dk bekle).
+        Task {
+            let paths = paths
+            for _ in 0..<120 {
+                try? await Task.sleep(for: .seconds(5))
+                let found = SteamLibrary.libraryFolders(paths: paths).contains {
+                    FileManager.default.fileExists(atPath: $0.appending(path: "appmanifest_\(game.appID).acf").path)
+                }
+                if found { reload(); return }
+            }
         }
     }
 

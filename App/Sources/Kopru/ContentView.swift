@@ -12,12 +12,23 @@ struct ContentView: View {
                                        description: Text(problem))
             } else {
                 NavigationSplitView {
-                    List(model.games, selection: $model.selection) { game in
-                        GameRow(game: game, running: model.status.runningGameIDs.contains(game.id))
+                    List(selection: $model.selection) {
+                        Section("Kurulu") {
+                            ForEach(model.games) { game in
+                                GameRow(game: game, running: model.status.runningGameIDs.contains(game.id))
+                                    .tag(game.id)
+                            }
+                        }
+                        // profiles.json'da olup Steam'de kurulu olmayanlar
+                        if !model.available.isEmpty {
+                            Section("Kurulu değil") {
+                                ForEach(model.available) { AvailableRow(game: $0).tag($0.id) }
+                            }
+                        }
                     }
                     .navigationSplitViewColumnWidth(min: 220, ideal: 260)
                     .overlay {
-                        if model.games.isEmpty {
+                        if model.games.isEmpty && model.available.isEmpty {
                             ContentUnavailableView("Kurulu oyun yok", systemImage: "gamecontroller",
                                                    description: Text("Steam'den bir oyun kurunca burada görünür."))
                         }
@@ -25,6 +36,8 @@ struct ContentView: View {
                 } detail: {
                     if let game = model.selectedGame {
                         GameDetail(game: game)
+                    } else if let game = model.selectedAvailable {
+                        AvailableDetail(game: game)
                     } else {
                         ContentUnavailableView("Bir oyun seç", systemImage: "gamecontroller")
                     }
@@ -299,6 +312,73 @@ private struct GameDetail: View {
                 Text(game.name).font(.largeTitle.bold()).foregroundStyle(.white).padding(20)
             }
         }
+    }
+}
+
+private struct AvailableRow: View {
+    let game: AvailableGame
+
+    var body: some View {
+        HStack(spacing: 10) {
+            CoverImage(url: game.capsuleImage)
+                .frame(width: 36, height: 54)
+                .clipShape(.rect(cornerRadius: 4))
+                .opacity(0.6)
+            Text(game.name).lineLimit(2).foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 2)
+    }
+}
+
+/// Kurulu olmayan oyun: profil bilgisi + Steam'de kurma / mağaza sayfası.
+private struct AvailableDetail: View {
+    @Environment(AppModel.self) private var model
+    let game: AvailableGame
+
+    private var profile: GameProfile? { model.profiles[game.appID] }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Color.clear
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 200)
+                    .overlay { CoverImage(url: game.heroImage) }
+                    .clipped()
+                    .overlay(alignment: .bottomLeading) {
+                        Text(game.name).font(.largeTitle.bold()).foregroundStyle(.white)
+                            .shadow(radius: 4).padding(20)
+                    }
+                    .background(.quaternary)
+
+                HStack(spacing: 16) {
+                    Button("Steam'de Kur", systemImage: "arrow.down.circle") { model.openInSteam(game, install: true) }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.extraLarge)
+                    Button("Mağaza Sayfası", systemImage: "cart") { model.openInSteam(game, install: false) }
+                        .controlSize(.extraLarge)
+                }
+                .padding(.horizontal, 20)
+
+                Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 8) {
+                    GridRow { Text("Steam AppID").foregroundStyle(.secondary)
+                        Text(game.appID).textSelection(.enabled) }
+                    GridRow { Text("Grafik").foregroundStyle(.secondary)
+                        Text((profile ?? GameProfile()).rendererDescription) }
+                }
+                .padding(.horizontal, 20)
+
+                Group {
+                    Text("Bu oyun Köprü'nün listesinde ama Steam'de kurulu değil. Steam'de Kur, oyun hesabındaysa Steam'in kurulum penceresini açar; kurulum başlayınca oyun \"Kurulu\" bölümüne geçer.")
+                    if let notes = profile?.notes { Text(notes).italic() }
+                }
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 20)
+            }
+            .padding(.bottom, 20)
+        }
+        .navigationTitle(game.name)
     }
 }
 

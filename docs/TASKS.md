@@ -445,6 +445,13 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - Kullanıcı: "kopru" (noktasız) aramasında da kapandı → ö/ü değil. Safari denemesi yapılmadı.
 - Çözüm yolu: masaüstüne kısayol `~/Desktop/Köprü` → `build/Köprü.app` (sembolik bağlantı; `build-app.sh` paketi silip yeniden kurduğu için Finder takma adı yerine bu). Dock'a da sürüklenebilir.
 
+## 2026-10-18 — Kurulu olmayan profiller de listede ✅
+- Kullanıcı: "GameToMac oyunlarının hiçbiri Köprü'ye eklenmemiş" → liste yalnızca appmanifest'i olan (kurulu) oyunları gösteriyordu.
+- `SteamLibrary.available` + `AvailableGame`: profiles.json'da olup kurulu olmayanlar. Kenar çubuğu iki bölüm: **Kurulu** / **Kurulu değil**. Kurulu olmayan oyun sayfası: **Steam'de Kur** (`steam.exe steam://install/<appid>`) ve **Mağaza Sayfası** (`steam://store/<appid>`); Steam kapalıysa `-cef-disable-gpu` ile açılır. Kurulum başlayınca (appmanifest belirince, ~10 dk'ya kadar 5 sn'de bir bakılır) liste yenilenir.
+- Hata ve düzeltme: Bölümlü `List` + `ForEach`'te vurgulanan satır seçilenle uyuşmadı (CS2 seçiliyken AoM vurgulu) → satırlara açık `.tag(id)`.
+- Test 31/31. Görüntüyle doğrulandı (`--select 730/35140/1174180 --snapshot`). **Steam'de Kur/Mağaza düğmeleri denenmedi.**
+- Steam görsel önbelleğine (`appcache/librarycache/<appid>`) göre kullanıcının hesabında bu 17 oyundan yalnızca **CS2 (730)** görünüyor; diğerleri için Steam'de Kur muhtemelen "hesapta yok" der.
+
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 akşam: Batman AA)
 - **Asylum (35140) çalışıyor, ses bozuk.** Başlatma: `cd …/Batman Arkham Asylum GOTY/Binaries && SteamAppId=35140 SteamGameId=35140 scripts/kwine steam "$PWD/BmLauncher.exe"` → başlatıcıda Play. Wine Mono 10.4.1 prefix'te kurulu, `wine.env`'de `mscoree` artık kapalı değil.

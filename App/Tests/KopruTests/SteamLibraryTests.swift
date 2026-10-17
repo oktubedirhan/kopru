@@ -34,6 +34,27 @@ struct SteamLibraryTests {
         #expect(witcher.installURL.path.hasSuffix("steamapps/common/The Witcher 3"))
     }
 
+    @Test("Kurulu olmayan profiller listelenir: kurulular ve araçlar çıkar, ada göre sıralı, görsel varsa bulunur")
+    func availableGames() throws {
+        let fx = try Fixture(); defer { fx.remove() }
+        let installed = InstalledGame(appID: "292030", name: "The Witcher 3", installDir: "The Witcher 3",
+                                      commonDir: fx.paths.steamCommon, sizeOnDisk: 0, stateFlags: 4,
+                                      heroImage: nil, capsuleImage: nil, logoImage: nil)
+        try fx.write("x", to: fx.paths.steamLibraryCache.appending(path: "730/abc/library_600x900.jpg"))
+        let profiles: [String: GameProfile] = [
+            "292030": GameProfile(name: "The Witcher 3"),
+            "730": GameProfile(name: "Counter-Strike 2"),
+            "1245620": GameProfile(name: "Elden Ring"),
+            "228980": GameProfile(name: "Steamworks"),
+            "1": GameProfile(),
+        ]
+        let list = SteamLibrary.available(profiles: profiles, installed: [installed],
+                                          imageCache: fx.paths.steamLibraryCache)
+        #expect(list.map(\.name) == ["App 1", "Counter-Strike 2", "Elden Ring"])
+        #expect(list[1].capsuleImage?.lastPathComponent == "library_600x900.jpg")
+        #expect(list[2].heroImage == nil)
+    }
+
     @Test("libraryfolders.vdf'teki ikinci kütüphane (başka sürücü) de okunur")
     func secondLibrary() throws {
         let fx = try Fixture(); defer { fx.remove() }

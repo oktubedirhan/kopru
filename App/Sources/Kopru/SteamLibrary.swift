@@ -20,6 +20,17 @@ struct InstalledGame: Identifiable, Hashable, Sendable {
     var needsUpdate: Bool { stateFlags & 2 != 0 }
 }
 
+/// Profili olan ama kurulu olmayan oyun (listede "Kurulu değil" bölümü). Steam'den kurulunca InstalledGame olur.
+struct AvailableGame: Identifiable, Hashable, Sendable {
+    let appID: String
+    let name: String
+    /// Steam görselleri yalnızca hesapta görünen oyunlar için önbellekte olur.
+    let heroImage: URL?
+    let capsuleImage: URL?
+
+    var id: String { appID }
+}
+
 enum SteamLibrary {
     /// Oyun olmayan Steam araçları (listede gösterilmez).
     static let hiddenAppIDs: Set<String> = [
@@ -77,6 +88,21 @@ enum SteamLibrary {
                     logoImage: images["logo.png"]
                 )
             }
+    }
+
+    /// Profiles.json'daki oyunlardan kurulu olmayanlar, ada göre sıralı.
+    static func available(profiles: [String: GameProfile], installed: [InstalledGame],
+                          imageCache: URL) -> [AvailableGame] {
+        let installedIDs = Set(installed.map(\.appID))
+        return profiles
+            .filter { !installedIDs.contains($0.key) && !hiddenAppIDs.contains($0.key) }
+            .map { appID, profile in
+                let images = findImages(appID: appID, in: imageCache)
+                return AvailableGame(appID: appID, name: profile.name ?? "App \(appID)",
+                                     heroImage: images["library_hero.jpg"],
+                                     capsuleImage: images["library_capsule.jpg"] ?? images["library_600x900.jpg"])
+            }
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
     /// Steam görselleri librarycache/<appid>/<özet>/library_hero.jpg gibi yollarda duruyor.
