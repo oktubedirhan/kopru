@@ -452,6 +452,11 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - Test 31/31. Görüntüyle doğrulandı (`--select 730/35140/1174180 --snapshot`). **Steam'de Kur/Mağaza düğmeleri denenmedi.**
 - Steam görsel önbelleğine (`appcache/librarycache/<appid>`) göre kullanıcının hesabında bu 17 oyundan yalnızca **CS2 (730)** görünüyor; diğerleri için Steam'de Kur muhtemelen "hesapta yok" der.
 
+## 2026-10-18 — GameToMac CS2'yi nasıl çalıştırıyor? (inceleme, yalnızca okuma)
+- Ayrıntı: `docs/notes/gametomac-cs2.md`. Özet: online/VAC için **hiçbir şey yapılmıyor** (kodda VAC/anti-cheat/`-insecure` yok); oyun normal `-applaunch 730` ile açılıyor. VAC çekirdek seviyesinde değil, Wine'da çalışıyor. Emek grafikte: CS2'ye özel değiştirilmiş **DXMT** (açık kaynak DX11→Metal) + gölgelendirici ön derleme (oynarken kaydet, sonraki açılışta önceden derle) + ekran ayarını masaüstü çözünürlüğüne çekme.
+- Kendi doğrulama dosyalarında online maç doğrulaması hâlâ bekleyen madde.
+- Köprü için: CS2'yi önce mevcut kurulumla (D3DMetal) dene; sorun olursa DXMT'yi asıl projesinden derle.
+
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 akşam: Batman AA)
 - **Asylum (35140) çalışıyor, ses bozuk.** Başlatma: `cd …/Batman Arkham Asylum GOTY/Binaries && SteamAppId=35140 SteamGameId=35140 scripts/kwine steam "$PWD/BmLauncher.exe"` → başlatıcıda Play. Wine Mono 10.4.1 prefix'te kurulu, `wine.env`'de `mscoree` artık kapalı değil.
