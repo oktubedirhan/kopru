@@ -430,6 +430,7 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - GameToMac kütüphanesinde (`~/Library/Application Support/Game Library/Games/`) **yalnızca `witcher3`** var (prefix 69 GB; appmanifest 292030 + 228980 Steamworks Redistributables). Taşınacak başka oyun yok.
 - Oradaki Witcher 3 save/ayarları (`…/users/crossover/Documents/The Witcher 3`) `~/.kopru/backups/witcher3-saves-2026-10-17/gametomac/` ile `diff -rq` → **aynı**.
 - Öneri: oyunu kullanıcı GameToMac arayüzünden silsin (biz dokunmuyoruz); uygulama (737 MB) kaynak kodu başvurusu olarak şimdilik kalabilir. Not: bizim kopya APFS klonu, bloklar ortak → silince açılan yer 69 GB'tan az olabilir (önce/sonra `df -h /`). Boş yer şu an 575 GB.
+- **Silindi (kullanıcı isteğiyle):** GameToMac arayüzündeki Uninstall bir şey silmedi (klasör 70 GB duruyordu). Kullanıcının açık onayıyla: GameToMac kapatıldı (`osascript … quit`), bizim prefix'te `Game Library`'ye bağlantı olmadığı doğrulandı, `rm -rf …/Game Library/Games/witcher3`. Boş yer 575 → **629 GB** (+54 GB; ortak klon blokları yüzünden 69 değil). Bizim Witcher 3 kopyası ve yedekler yerinde. Uygulama duruyor.
 
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 akşam: Batman AA)

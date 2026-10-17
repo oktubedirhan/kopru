@@ -11,7 +11,8 @@
 - `/Applications/GameToMac.app/Contents/Resources/Sources/` içindeki Swift kodu ve `.md` belgeleri **okunabilir**, "neden böyle yapılmış" diye açıklanabilir.
 - GameToMac'in kendi kodunda lisans yok (tüm hakları saklı): **kopyalama**, kendi kodumuzu kendimiz yaz. Yöntemi anlamak serbest, metni aktarmak değil.
 - `/Applications/GameToMac.app` ve onun verilerine dokunma, değiştirme, içinden dosya kullanma.
-  - İstisna (kullanıcı onayı, 2026-10-16): kullanıcının kendi Steam indirmesi olan Witcher 3 oyun dosyaları ve appmanifest'leri, GameToMac'in `~/Library/Application Support/Game Library/Games/witcher3/` prefix'inden **salt okunur APFS klonu** (`cp -c`) ile bizim `steam` prefix'imize alındı. Orijinal değiştirilmez; save'lere dokunulmaz.
+  - İstisna (kullanıcı onayı, 2026-10-16): kullanıcının kendi Steam indirmesi olan Witcher 3 oyun dosyaları ve appmanifest'leri, GameToMac'in prefix'inden **salt okunur APFS klonu** (`cp -c`) ile bizim `steam` prefix'imize alındı.
+  - 2026-10-17: GameToMac'in Witcher 3 kütüphanesi (`~/Library/Application Support/Game Library/Games/witcher3`) kullanıcının isteğiyle silindi (arayüzdeki Uninstall çalışmadı). Save'leri önceden `~/.kopru/backups/witcher3-saves-2026-10-17/gametomac/` içine yedeklenmişti. Uygulama (`/Applications/GameToMac.app`) kod başvurusu olarak duruyor.
 - Apple GPTK'nın lisansı kısıtlayıcı: D3DMetal'i kullanıcı Apple'dan kendisi indirir; GameToMac içindeki kopya kullanılmaz.
 
 ## Sınırlar
