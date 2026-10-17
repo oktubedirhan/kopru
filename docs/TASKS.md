@@ -390,6 +390,24 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - **Asylum (35140) indirmesi 04:20'de başladı** (7,8 GB, ~41 Mbps). Bitip bitmediği kontrol edilmedi.
 - **Sıradaki oturum:** (1) `steamapps/appmanifest_35140.acf` StateFlags 4 mü bak; (2) `Binaries/` içinde exe/launcher adını doğrula, profiles.json'u düzelt; (3) Asylum ilk açılış (DX9/wined3d, 32-bit WoW64); (4) save klasörünü bulup profile ekle; (5) Witcher 3 "Kayıtlar" satırını `--select 292030 --snapshot` ile kontrol et.
 
+## 2026-10-17 — Batman: Arkham Asylum ilk açılış: Wine Mono ile başlatıcı, oyun menüde + ses ✅
+- **Kurulum bitti:** `appmanifest_35140.acf` → `StateFlags 4`, build 597963, 8,47 GB.
+- **Klasör (`Binaries/`):** `ShippingPC-BmGame.exe` (oyun, PE32 i386), `BmLauncher.exe` (**.NET** başlatıcı), `BmStartApp.exe`, `UE3ShaderCompileWorker.exe`. Steam'in launch girdisi (`appinfo.vdf`): `Binaries\BmLauncher.exe`.
+- **İlk açılış kurulumu (Steam üzerinden, `kwine … -applaunch 35140`):** `installscript.vdf` → DXSETUP, `vcredist_x86.exe /q`, **PhysX 9.09.0814** (`/quiet`), hepsi çıkış 0 (`logs/runprocess_log.txt`). PhysX `syswow64/PhysXLoader.dll` + `Program Files (x86)/AGEIA Technologies` kurdu. Doğrudan başlatma bu adımı atlar; bu yüzden ilk açılış Steam'den yapıldı.
+- **Sorun 1: BmLauncher 2 sn'de kapandı.** `WINEDEBUG=err+all` → `mscoree.dll not found, IL-only binary "BmLauncher.exe" cannot be loaded`. Sebep: `wine.env`'deki `mscoree=` (Mono indirme penceresini engellemek için) .NET yükleyicisini kapatıyordu ve prefix'te Mono yoktu.
+- **Sorun 2: başlatıcı atlanamıyor.** Oyunu doğrudan `ShippingPC-BmGame.exe` ile açınca wined3d başladı, ayar dosyalarını yazdı, sonra **kendisi `BmLauncher.exe`'yi çağırıp kapandı**. Exe'deki UTF-16 dizeler: `"Please launch the game using BmLauncher."`, `launcher_die_event%d` (başlatıcı ile oyun arasında adlandırılmış event).
+- **Çözüm: Wine Mono 10.4.1** (Wine'ın açık kaynak .NET'i).
+  - Sürüm ve SHA-256 bizim Wine kaynağından: `dlls/appwiz.cpl/addons.c` → `MONO_VERSION "10.4.1"`, `MONO_SHA 071f4b28…8e23`.
+  - İndirme: `dl.winehq.org/wine/wine-mono/10.4.1/wine-mono-10.4.1-x86.msi` (85,5 MB) → `~/.kopru/downloads/wine-mono/`. SHA-256 kaynaktakiyle **aynı**.
+  - Kurulum: `kwine steam msiexec /i …msi /qn` → `C:\windows\mono\mono-2.0` (231 MB).
+  - Aynı msi `runtime/crossover-26.3/share/wine/mono/`'ya kondu: `install_from_default_dir()` önce `INSTALL_DATADIR/wine/mono/` klasörüne bakıyor; yeni prefix'lerde wineboot indirme penceresi açmadan oradan kurar (C5 için). **Bu yol denenmedi.**
+  - `config/wine.env`: `WINEDLLOVERRIDES`'tan `mscoree` çıkarıldı (`mshtml=` kaldı). `stable` runtime değişmedi.
+- **Sonuç (çalıştı, kullanıcı gördü):** `kwine steam …/Binaries/BmLauncher.exe` (`SteamAppId=35140`) → başlatıcı penceresi düzgün; Play → `ShippingPC-BmGame.exe` açıldı, **logolar/menü görünüyor, ses var**. Bizim kurulumda ilk DirectX 9 (wined3d → OpenGL) ve ilk 32-bit (WoW64) oyun.
+  - Log'da yalnızca beklenenler: Vulkan yok, Kerberos yok, wined3d `GL_INVALID_FRAMEBUFFER_OPERATION from glClear` (açılışta 2 kez). Yeni macOS çökme raporu yok.
+- **Ayar/save yeri:** `%USERPROFILE%\Documents\Square Enix\Batman Arkham Asylum GOTY\` (= Mac'te `~/Documents/Square Enix/…`, Documents symlink'i): `BmGame/Config/*.ini` (ilk açılışta `ResX=1024`, `Fullscreen=False`), `BmGame/Logs/Launch.log`, `SaveData/`.
+- **profiles.json (35140):** `executable` → `Binaries/BmLauncher.exe` (oyun exe'si tek başına açılmadığı için doğrudan modda da başlatıcı), `saveDirectory` eklendi. Test genişletildi, 29/29.
+- **Not:** Şu an açık olan Steam eski ortamla (mscoree kapalı) başlatılmıştı; Steam üzerinden Asylum için Steam'in yeniden başlatılması gerek.
+
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 güncellemesi)
 - Witcher 3 (build 25773555) **çalışıyor**: Steam açıkken `scripts/kwine steam 'C:\Program Files (x86)\Steam\steam.exe' -applaunch 292030 --launcher-skip`. Orijinal Steam dosyaları, proxy yok.

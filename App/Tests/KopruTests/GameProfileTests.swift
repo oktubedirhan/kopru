@@ -16,6 +16,9 @@ struct GameProfileTests {
         #expect(profiles["292030"]?.executable == "bin/x64_dx12/witcher3.exe")
         #expect(profiles["208650"]?.executable == "Binaries/Win64/BatmanAK.exe")
         #expect(profiles["35140"]?.directX == "9")
+        // Asylum'un exe'si başlatıcısız açılmıyor: doğrudan başlatmada da BmLauncher çalışmalı.
+        #expect(profiles["35140"]?.executable == "Binaries/BmLauncher.exe")
+        #expect(profiles["35140"]?.saveDirectory?.hasSuffix("Batman Arkham Asylum GOTY\\SaveData") == true)
     }
 
     @Test("Grafik yolu açıklaması DirectX sürümüne göre")
