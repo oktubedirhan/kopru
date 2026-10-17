@@ -16,7 +16,7 @@ final class AppModel {
     private(set) var restartingSteam = false
     private var monitor: Task<Void, Never>?
 
-    /// Kullanıcının seçtiği grafik ayarları (Ayarlar penceresi).
+    /// Genel grafik ayarları (Ayarlar penceresi). Steam üzerinden başlatılan oyunlara Steam'den geçer.
     var settings = LaunchSettings.load() {
         didSet { settings.save() }
     }
@@ -24,7 +24,12 @@ final class AppModel {
     /// açıldıysa bilinmiyor; o durumda varsayılan ayarlarla açıldığını varsayıyoruz.
     private var steamSettings: LaunchSettings?
 
-    /// Ayarlar değişti ama çalışan Steam (ve oyun) hâlâ eski ayarlarla mı?
+    /// Oyun profilleri: paketteki profiles.json + ~/…/Kopru/profiles.json
+    private(set) var profiles: [String: GameProfile] = [:]
+    /// Kullanıcının oyun başına seçimleri (başlatma yolu, oyuna özel grafik ayarı)
+    private(set) var gameSettings = GameSettings.loadAll()
+
+    /// Ayarlar değişti ama çalışan Steam (ve ondan başlatılan oyunlar) hâlâ eski ayarlarla mı?
     var needsSteamRestart: Bool {
         status.steamRunning && !restartingSteam && (steamSettings ?? LaunchSettings()) != settings
     }
@@ -32,12 +37,25 @@ final class AppModel {
     /// Wine ortam değişkenleri: paketteki config/wine.env kopyası.
     private let envFile = WineEnvFile.bundled()
 
-    private var steam: Wine {
-        Wine(paths: paths, prefixName: Paths.steamPrefixName, settings: settings,
-             envFile: envFile ?? WineEnvFile(text: ""))
+    private func wine(graphics: LaunchSettings, extra: [String: String] = [:]) -> Wine {
+        Wine(paths: paths, prefixName: Paths.steamPrefixName, settings: graphics,
+             envFile: envFile ?? WineEnvFile(text: ""), extraEnvironment: extra)
     }
 
     var selectedGame: InstalledGame? { games.first { $0.id == selection } }
+
+    func profile(for game: InstalledGame) -> GameProfile? { profiles[game.appID] }
+
+    func settings(for game: InstalledGame) -> GameSettings { gameSettings[game.appID] ?? GameSettings() }
+
+    func setSettings(_ value: GameSettings, for game: InstalledGame) {
+        gameSettings[game.appID] = value == GameSettings() ? nil : value
+        GameSettings.saveAll(gameSettings)
+    }
+
+    func launchMode(for game: InstalledGame) -> GameProfile.LaunchMode {
+        LaunchPlan.mode(profile: profile(for: game), settings: gameSettings[game.appID])
+    }
 
     func start() {
         reload()
@@ -52,6 +70,9 @@ final class AppModel {
 
     func reload() {
         let fm = FileManager.default
+        let loaded = GameProfiles.load(bundled: Bundle.main.url(forResource: "profiles", withExtension: "json"),
+                                       user: paths.userProfiles)
+        profiles = loaded.profiles
         if envFile == nil {
             setupProblem = "Uygulama paketinde wine.env yok. Uygulamayı scripts/build-app.sh ile derle."
         } else if !fm.isExecutableFile(atPath: paths.wine.path) {
@@ -61,6 +82,7 @@ final class AppModel {
         } else {
             setupProblem = nil
         }
+        if let problem = loaded.problem { message = problem }
         games = SteamLibrary.load(paths: paths)
         if selectedGame == nil { selection = games.first?.id }
     }
@@ -83,24 +105,54 @@ final class AppModel {
     // MARK: - Eylemler
 
     func play(_ game: InstalledGame) {
-        var args = [Paths.steamExeWindows]
-        // Steam kapalıysa aynı komutla hem Steam açılır hem oyun istenir.
-        if !status.steamRunning {
-            args.append("-cef-disable-gpu")
-            steamSettings = settings
-        }
-        args += ["-applaunch", game.appID] + (GameProfiles.extraArguments[game.appID] ?? [])
+        let profile = profile(for: game), choice = gameSettings[game.appID]
         launching[game.appID] = .now
-        run(args, log: "steam", done: "\(game.name) başlatılıyor. Steam'de bir onay penceresi açılırsa onayla.")
+        switch LaunchPlan.mode(profile: profile, settings: choice) {
+        case .steam:
+            let plan = LaunchPlan.make(game: game, profile: profile, settings: choice, global: settings,
+                                       steamRunning: status.steamRunning, paths: paths)
+            if !status.steamRunning { steamSettings = settings }
+            run(plan, log: "steam", done: "\(game.name) Steam üzerinden başlatılıyor. Steam'de bir onay penceresi açılırsa onayla.")
+        case .direct:
+            Task { await playDirect(game, profile: profile, choice: choice) }
+        }
+    }
+
+    /// Doğrudan başlatma: oyunun steam_api'si açık bir Steam'e bağlanmak ister; kapalıysa önce Steam açılır.
+    private func playDirect(_ game: InstalledGame, profile: GameProfile?, choice: GameSettings?) async {
+        if !status.steamRunning {
+            openSteam()
+            message = "\(game.name) için önce Steam açılıyor…"
+            for _ in 0..<30 {  // en fazla ~90 sn
+                try? await Task.sleep(for: .seconds(3))
+                await refreshStatus()
+                if status.steamRunning { break }
+            }
+            guard status.steamRunning else {
+                launching[game.appID] = nil
+                message = "Steam açılamadı; \(game.name) başlatılmadı."
+                return
+            }
+            // Steam'in hesaba giriş yapmasına zaman tanı.
+            try? await Task.sleep(for: .seconds(15))
+        }
+        let plan = LaunchPlan.make(game: game, profile: profile, settings: choice, global: settings,
+                                   steamRunning: true, paths: paths)
+        run(plan, log: "game-\(game.appID)",
+            done: "\(game.name) doğrudan başlatılıyor (Steam'i atlayarak).")
     }
 
     func openSteam() {
         steamSettings = settings
-        run([Paths.steamExeWindows, "-cef-disable-gpu"], log: "steam", done: "Steam açılıyor…")
+        let plan = LaunchPlan(mode: .steam, arguments: [Paths.steamExeWindows, "-cef-disable-gpu"],
+                              workingDirectory: paths.steamDir, extraEnvironment: [:], graphics: settings)
+        run(plan, log: "steam", done: "Steam açılıyor…")
     }
 
     func closeSteam() {
-        run([Paths.steamExeWindows, "-shutdown"], log: "steam", done: "Steam'e kapanma komutu gönderildi.")
+        let plan = LaunchPlan(mode: .steam, arguments: [Paths.steamExeWindows, "-shutdown"],
+                              workingDirectory: paths.steamDir, extraEnvironment: [:], graphics: settings)
+        run(plan, log: "steam", done: "Steam'e kapanma komutu gönderildi.")
     }
 
     /// Ayarların oyuna geçmesi için: Steam'i kapat, tamamen kapanmasını bekle, yeni ayarlarla aç.
@@ -126,7 +178,7 @@ final class AppModel {
 
     /// wineserver -k: Steam ve oyunlar dahil bu prefix'teki bütün Windows süreçleri kapanır.
     func forceQuit() {
-        let wine = steam
+        let wine = wine(graphics: settings)
         message = "Zorla kapatılıyor…"
         Task {
             do {
@@ -149,11 +201,13 @@ final class AppModel {
         NSWorkspace.shared.open(paths.logs)
     }
 
-    private func run(_ arguments: [String], log: String, done: String) {
-        let wine = steam
+    private func run(_ plan: LaunchPlan, log: String, done: String) {
+        let wine = wine(graphics: plan.graphics, extra: plan.extraEnvironment)
         Task {
             do {
-                try await Task.detached { _ = try wine.launch(arguments, log: log) }.value
+                try await Task.detached {
+                    _ = try wine.launch(plan.arguments, log: log, workingDirectory: plan.workingDirectory)
+                }.value
                 message = done
             } catch {
                 message = "Başlatılamadı: \(error.localizedDescription)"

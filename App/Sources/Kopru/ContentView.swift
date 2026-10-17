@@ -113,14 +113,47 @@ private struct GameDetail: View {
     let game: InstalledGame
 
     private var running: Bool { model.status.runningGameIDs.contains(game.id) }
+    private var launching: Bool { model.launching[game.id] != nil }
+    private var profile: GameProfile? { model.profile(for: game) }
+    private var mode: GameProfile.LaunchMode { model.launchMode(for: game) }
+
+    /// Bu oyuna gerçekten uygulanacak grafik ayarı: Steam yolunda genel ayar, doğrudan yolda oyuna özel (varsa).
+    private var effectiveGraphics: LaunchSettings {
+        mode == .direct ? (model.settings(for: game).graphics ?? model.settings) : model.settings
+    }
 
     private var graphicsSummary: String {
         var parts = ["D3DMetal 4 (DirectX → Metal)"]
-        if model.settings.metalHUD { parts.append("FPS göstergesi") }
-        if let fps = model.settings.maxFPS { parts.append("en fazla \(fps) FPS") }
+        if effectiveGraphics.metalHUD { parts.append("FPS göstergesi") }
+        if let fps = effectiveGraphics.maxFPS { parts.append("en fazla \(fps) FPS") }
         return parts.joined(separator: " · ")
     }
-    private var launching: Bool { model.launching[game.id] != nil }
+
+    private var extraArguments: [String] {
+        (mode == .steam ? profile?.steamArguments : profile?.arguments) ?? []
+    }
+
+    // Oyun başına seçimler (AppModel.gameSettings) için bağlamalar
+    private func update(_ change: (inout GameSettings) -> Void) {
+        var s = model.settings(for: game)
+        change(&s)
+        model.setSettings(s, for: game)
+    }
+    private var modeBinding: Binding<GameProfile.LaunchMode> {
+        Binding(get: { mode }, set: { value in update { $0.launchMode = value } })
+    }
+    private var customGraphics: Binding<Bool> {
+        Binding(get: { model.settings(for: game).graphics != nil },
+                set: { on in update { $0.graphics = on ? ($0.graphics ?? model.settings) : nil } })
+    }
+    private var hudBinding: Binding<Bool> {
+        Binding(get: { model.settings(for: game).graphics?.metalHUD ?? false },
+                set: { value in update { $0.graphics?.metalHUD = value } })
+    }
+    private var fpsBinding: Binding<Int?> {
+        Binding(get: { model.settings(for: game).graphics?.maxFPS },
+                set: { value in update { $0.graphics?.maxFPS = value } })
+    }
 
     var body: some View {
         ScrollView {
@@ -160,14 +193,20 @@ private struct GameDetail: View {
                         Text(game.sizeOnDisk.formatted(.byteCount(style: .file))) }
                     GridRow { Text("Steam AppID").foregroundStyle(.secondary)
                         Text(game.appID).textSelection(.enabled) }
-                    if let extra = GameProfiles.extraArguments[game.appID] {
+                    if !extraArguments.isEmpty {
                         GridRow { Text("Ek seçenekler").foregroundStyle(.secondary)
-                            Text(extra.joined(separator: " ")).monospaced() }
+                            Text(extraArguments.joined(separator: " ")).monospaced() }
+                    }
+                    if mode == .direct, let exe = profile?.executable {
+                        GridRow { Text("Program").foregroundStyle(.secondary)
+                            Text(exe).monospaced().textSelection(.enabled) }
                     }
                     GridRow { Text("Grafik").foregroundStyle(.secondary)
                         Text(graphicsSummary) }
                 }
                 .padding(.horizontal, 20)
+
+                if profile?.executable != nil { launchSection }
 
                 Button("Oyun Klasörünü Göster", systemImage: "folder") {
                     model.reveal(game.installURL)
@@ -175,14 +214,50 @@ private struct GameDetail: View {
                 .buttonStyle(.link)
                 .padding(.horizontal, 20)
 
-                Text("Oyun Steam üzerinden açılır; Steam kapalıysa önce o açılır. Kayıtlar oyundan çıkınca Steam Cloud'a yüklenir.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 20)
+                Group {
+                    if mode == .steam {
+                        Text("Oyun Steam üzerinden açılır; Steam kapalıysa önce o açılır. Kayıtlar oyundan çıkınca Steam Cloud'a yüklenir. Grafik ayarı genel ayarlardan (⌘,) gelir.")
+                    } else {
+                        Text("Oyun exe'si Steam'e sorulmadan başlatılır (Steam açık kalır, oyun SteamAppId ile bağlanır). Böylece oyuna özel ayar mümkün; ama Steam Cloud'un açılıştaki eşitlemesi ve Steam'in ilk kurulum adımları atlanır.")
+                    }
+                    if let notes = profile?.notes { Text(notes).italic() }
+                }
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 20)
             }
             .padding(.bottom, 20)
         }
         .navigationTitle(game.name)
+    }
+
+    /// Başlatma yolu (yalnızca profilde exe yolu varsa) ve doğrudan yolda oyuna özel grafik ayarı.
+    private var launchSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Picker("Başlatma", selection: modeBinding) {
+                Text("Steam üzerinden").tag(GameProfile.LaunchMode.steam)
+                Text("Doğrudan").tag(GameProfile.LaunchMode.direct)
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 360)
+            .disabled(running || launching)
+
+            if mode == .direct {
+                Toggle("Bu oyuna özel grafik ayarı", isOn: customGraphics)
+                if customGraphics.wrappedValue {
+                    HStack(spacing: 20) {
+                        Toggle("FPS göstergesi", isOn: hudBinding)
+                        Picker("FPS sınırı", selection: fpsBinding) {
+                            Text("Sınırsız").tag(Int?.none)
+                            ForEach(LaunchSettings.fpsChoices, id: \.self) { Text("\($0)").tag(Int?.some($0)) }
+                        }
+                        .frame(maxWidth: 200)
+                    }
+                    .padding(.leading, 20)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
     }
 
     /// Büyük görselin sol altında: alttan kararan geçiş + oyunun logosu (yoksa adı).

@@ -11,6 +11,9 @@ struct Wine: Sendable {
 
     var prefix: URL { paths.prefix(prefixName) }
 
+    /// Bu çalıştırmaya özel ek ortam (ör. doğrudan başlatmada SteamAppId, profil değişkenleri).
+    var extraEnvironment: [String: String] = [:]
+
     var environment: [String: String] {
         var env = ProcessInfo.processInfo.environment
         // Dışarıdan gelen Wine/D3DMetal/Metal ayarları karışmasın.
@@ -20,27 +23,35 @@ struct Wine: Sendable {
         env.merge(envFile.environment(runtime: paths.runtime, gptk: paths.gptkLib,
                                       prefix: prefix, d3dmetal: d3dmetal)) { $1 }
         env.merge(settings.environment) { $1 }
+        env.merge(extraEnvironment) { $1 }
         return env
     }
 
     /// Bir Windows programını başlatır ve beklemez. Çıktı log dosyasına eklenir.
+    /// workingDirectory bir sürücünün altında olmalı (z: yok); verilmezse C:\ kullanılır.
     @discardableResult
-    func launch(_ arguments: [String], log name: String) throws -> Process {
-        try start(paths.wine, arguments, log: name)
+    func launch(_ arguments: [String], log name: String, workingDirectory: URL? = nil) throws -> Process {
+        try start(paths.wine, arguments, log: name, workingDirectory: workingDirectory)
     }
 
     /// Prefix'teki bütün Windows süreçlerini zorla kapatır (wineserver -k).
     func killAll() throws {
-        let p = try start(paths.wineserver, ["-k"], log: "wineserver")
+        let p = try start(paths.wineserver, ["-k"], log: "wineserver", workingDirectory: nil)
         p.waitUntilExit()
     }
 
-    private func start(_ executable: URL, _ arguments: [String], log name: String) throws -> Process {
+    private func start(_ executable: URL, _ arguments: [String], log name: String,
+                       workingDirectory: URL?) throws -> Process {
         let p = Process()
         p.executableURL = executable
         p.arguments = arguments
         p.environment = environment
-        p.currentDirectoryURL = prefix
+        // Wine, Mac'teki çalışma klasörünü Windows klasörüne çevirir; prefix klasörünün kendisi
+        // hiçbir sürücünün altında değil, bu yüzden varsayılan C:\ (drive_c).
+        let cwd = workingDirectory ?? prefix.appending(path: "drive_c")
+        p.currentDirectoryURL = cwd
+        // Wine önce PWD'ye bakar (get_initial_directory); çalışma klasörüyle aynı olsun.
+        p.environment?["PWD"] = cwd.path
         let log = try logHandle(name)
         p.standardOutput = log
         p.standardError = log

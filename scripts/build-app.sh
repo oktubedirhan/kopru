@@ -21,6 +21,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Kopru"
 cp "$REPO/App/Resources/AppIcon.icns" "$APP/Contents/Resources/"
 cp "$REPO/config/wine.env" "$APP/Contents/Resources/"   # Wine ortam değişkenleri (kwine ile ortak)
+cp "$REPO/App/Resources/profiles.json" "$APP/Contents/Resources/"   # oyun profilleri
 
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>

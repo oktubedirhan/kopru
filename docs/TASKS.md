@@ -354,6 +354,26 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - **Zararsız yeni uyarı:** terminal Mac klasöründeyken `cmd` "could not open working directory unix\…, starting in the Windows directory" diyor (Mac klasörü artık bir sürücüye eşlenmiyor).
 - **Denenmedi:** Witcher 3'ün `z:` olmadan açılması (kullanıcı testi A4 ile birlikte). Diğer test prefix'lerinde (`test`, `gptk-test`, `cx-test`) `z:` duruyor; yalnızca `steam` prefix'i değişti. C5 (prefix sihirbazı) yeni prefix'lerde `z:`'yi otomatik kaldırmalı.
 
+## 2026-10-17 — Hedef oyun değişti: Elden Ring yerine Batman: Arkham Knight (araştırma)
+- Kullanıcı kararı: GameToMac kütüphanesinden bağımsız ilk yeni oyun **Batman: Arkham Knight** (Steam AppID 208650). Elden Ring rafta.
+- Araştırma (Steam mağaza API'si + ProtonDB API; PCGamingWiki ve CodeWeavers sayfaları 403 verdi):
+  - DirectX 11, 64-bit, tek oyunculu, Steam Cloud var, ek hesap/başlatıcı yok. En az 45 GB (DLC ile ~50–55 GB). Fiyat $3.99 (2026-10-17).
+  - **`drm_notice: Denuvo Antitamper`**. Denuvo kopya koruması, anti-cheat değil; kırılmayacak/atlatılmayacak. Wine altında çalışıyor: ProtonDB **Platinum**, 333 rapor, güven "strong". Dikkat: Denuvo etkinleştirme sınırı → oyunu tek prefix'te (`steam`) tut, runtime/prefix değiştirmekten kaçın; ilk açılışta internet.
+  - CodeWeavers, CrossOver 23.5 (2023) duyurusunda D3DMetal ile çalışan oyunlar arasında saydı (üretici iddiası, bağımsız test değil).
+- Kullanıcı şimdilik almadı; kodlamaya (C1/C2) devam.
+
+## 2026-10-17 — C1 + C2: oyun profilleri dosyada, doğrudan başlatma ✅ (kod; oyunla denenmedi)
+- **C1:** `App/Resources/profiles.json` (pakete kopyalanıyor) + isteğe bağlı `~/Library/Application Support/Kopru/profiles.json` (alan alan ezer; ortam değişkenleri birleşir; bozuksa uyarı + varsayılanlar). Alanlar: `name, steamArguments, executable, arguments, launchMode (steam|direct), environment, saveDirectory, notes`. Koddaki `GameProfiles.extraArguments` sözlüğü kaldırıldı.
+  - Profiller: Witcher 3 (`--launcher-skip`, `bin/x64_dx12/witcher3.exe`, save `%USERPROFILE%\Documents\The Witcher 3`), Batman AK (`Binaries/Win64/BatmanAK.exe` — **doğrulanmadı**, oyun kurulu değil).
+  - `Paths.windowsUserProfile` (drive_c/users'ta Public dışı klasör → `C:\users\crossover`), `Paths.resolve(windowsPath:)` (`%USERPROFILE%` + dosdevices).
+- **C2:** `LaunchPlan` (saf hesap): yol = kullanıcı seçimi > profil > Steam; exe yolu yoksa Steam.
+  - Steam yolu: `steam.exe [-cef-disable-gpu] -applaunch <id> <steamArguments>`, çalışma klasörü Steam klasörü, grafik = genel ayar (ortam Steam'den miras).
+  - Doğrudan yol: `wine <exe Mac yolu> <arguments>`, çalışma klasörü exe klasörü, ortam += profil + `SteamAppId`/`SteamGameId`, grafik = oyuna özel (varsa) yoksa genel. Steam kapalıysa önce açılır, görünmesi beklenir (≤90 sn) + 15 sn giriş payı.
+  - `GameSettings` (UserDefaults): oyun başına başlatma yolu + oyuna özel grafik. Arayüz: ayrıntıda "Başlatma: Steam üzerinden / Doğrudan" + doğrudan modda "Bu oyuna özel grafik ayarı" (FPS göstergesi, FPS sınırı); açıklama metni Cloud eşitlemesinin atlandığını söylüyor; profil notları gösteriliyor.
+  - `Wine`: `extraEnvironment`; çalışma klasörü parametre, varsayılan `drive_c` (z: kaldırıldığından prefix klasörü artık eşlenmiyor); `PWD` çalışma klasörüyle aynı (Wine `get_initial_directory` önce PWD'ye bakıyor).
+- **Doğrulama:** 25/25 test (yeni: profil dosyası, kullanıcı ezmesi/bozuk dosya, `%USERPROFILE%`, yol seçimi, Steam/doğrudan planları, Wine ek ortamı). Gerçek Wine'da çalışma klasörü eşlemesi: Steam klasörü → `C:\Program Files (x86)\Steam`, exe klasörü → `C:\…\The Witcher 3\bin\x64_dx12`. Uygulama görüntüsü: Başlatma seçimi ve profil argümanları görünüyor.
+- **Denenmedi:** doğrudan başlatma ile gerçek bir oyun (Witcher 3 ya da Batman) — `steam_api`'nin SteamAppId ile açık Steam'e bağlanması, doğrudan modda Steam Cloud'un kapanışta eşitleyip eşitlemediği, oyuna özel FPS ayarının etkisi. Kullanıcı testine eklendi.
+
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 güncellemesi)
 - Witcher 3 (build 25773555) **çalışıyor**: Steam açıkken `scripts/kwine steam 'C:\Program Files (x86)\Steam\steam.exe' -applaunch 292030 --launcher-skip`. Orijinal Steam dosyaları, proxy yok.

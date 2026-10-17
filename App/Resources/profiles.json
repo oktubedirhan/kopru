@@ -1,0 +1,16 @@
+{
+  "games": {
+    "292030": {
+      "name": "The Witcher 3: Wild Hunt — Remastered",
+      "steamArguments": ["--launcher-skip"],
+      "executable": "bin/x64_dx12/witcher3.exe",
+      "saveDirectory": "%USERPROFILE%\\Documents\\The Witcher 3",
+      "notes": "--launcher-skip: REDprelauncher, REDlauncher penceresini atlar. 2026-10-17'de Steam üzerinden D3DMetal 4 ile oynandı."
+    },
+    "208650": {
+      "name": "Batman: Arkham Knight",
+      "executable": "Binaries/Win64/BatmanAK.exe",
+      "notes": "Henüz kurulmadı; exe yolu ve save klasörü doğrulanmadı. DirectX 11. Denuvo Antitamper: Denuvo etkinleştirme sınırı yüzünden oyunu tek prefix'te (steam) tut."
+    }
+  }
+}

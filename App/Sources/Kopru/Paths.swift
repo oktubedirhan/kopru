@@ -18,6 +18,9 @@ struct Paths: Sendable {
     var gptkLib: URL { root.appending(path: "gptk/4.0-beta3/redist/lib") }
 
     var logs: URL { root.appending(path: "logs") }
+    var backups: URL { root.appending(path: "backups") }
+    /// Kullanıcının oyun profili ekleri (paketteki profiles.json'u alan alan ezer).
+    var userProfiles: URL { root.appending(path: "profiles.json") }
 
     func prefix(_ name: String) -> URL { root.appending(path: "prefixes/\(name)") }
 
@@ -32,6 +35,24 @@ struct Paths: Sendable {
 
     /// Steam'in Windows içindeki yolu (Wine'a verilen komut satırında kullanılır).
     static let steamExeWindows = #"C:\Program Files (x86)\Steam\steam.exe"#
+
+    /// Prefix'teki Windows kullanıcı klasörü: drive_c/users altında Public dışındaki ilk klasör
+    /// (CrossOver tabanlı Wine'da "crossover"). Windows yolu olarak döner: C:\users\<ad>
+    static func windowsUserProfile(inPrefix prefix: URL) -> String? {
+        let users = prefix.appending(path: "drive_c/users")
+        guard let names = try? FileManager.default.contentsOfDirectory(atPath: users.path) else { return nil }
+        return names.sorted().first { $0 != "Public" && !$0.hasPrefix(".") }.map { #"C:\users\"# + $0 }
+    }
+
+    /// %USERPROFILE% içeren Windows yolunu Mac yoluna çevirir (save klasörleri için).
+    static func resolve(windowsPath: String, inPrefix prefix: URL) -> URL? {
+        var path = windowsPath
+        if path.contains("%USERPROFILE%") {
+            guard let profile = windowsUserProfile(inPrefix: prefix) else { return nil }
+            path = path.replacingOccurrences(of: "%USERPROFILE%", with: profile)
+        }
+        return unixPath(forWindowsPath: path, inPrefix: prefix)
+    }
 
     /// Windows yolunu Mac yoluna çevirir: "D:\Games" → <prefix>/dosdevices/d: bağlantısının hedefi + "/Games".
     /// Wine'da her sürücü harfi, prefix'teki dosdevices klasöründe bir symlink'tir (c: → ../drive_c, z: → /).

@@ -90,11 +90,3 @@ enum SteamLibrary {
         return found
     }
 }
-
-/// Oyuna özel başlatma ayarları. Steam'e "-applaunch <appid>" ile birlikte geçirilir.
-enum GameProfiles {
-    static let extraArguments: [String: [String]] = [
-        // REDprelauncher, CD Projekt'in REDlauncher penceresini atlayıp oyunu doğrudan açsın.
-        "292030": ["--launcher-skip"],
-    ]
-}
