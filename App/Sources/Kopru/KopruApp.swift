@@ -11,6 +11,7 @@ struct KopruApp: App {
                 .frame(minWidth: 820, minHeight: 520)
                 .task {
                     model.start()
+                    if let id = WindowSnapshot.requestedSelection { model.selection = id }
                     if let path = WindowSnapshot.requestedPath {
                         try? await Task.sleep(for: .seconds(5))
                         WindowSnapshot.save(to: path)

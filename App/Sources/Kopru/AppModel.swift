@@ -28,6 +28,8 @@ final class AppModel {
     private(set) var profiles: [String: GameProfile] = [:]
     /// Kullanıcının oyun başına seçimleri (başlatma yolu, oyuna özel grafik ayarı)
     private(set) var gameSettings = GameSettings.loadAll()
+    /// Oyun başına en son save yedeği klasörü
+    private(set) var lastBackups: [String: URL] = [:]
 
     /// Ayarlar değişti ama çalışan Steam (ve ondan başlatılan oyunlar) hâlâ eski ayarlarla mı?
     var needsSteamRestart: Bool {
@@ -51,6 +53,35 @@ final class AppModel {
     func setSettings(_ value: GameSettings, for game: InstalledGame) {
         gameSettings[game.appID] = value == GameSettings() ? nil : value
         GameSettings.saveAll(gameSettings)
+    }
+
+    /// Profildeki save klasörünün Mac yolu (yoksa nil)
+    func saveFolder(for game: InstalledGame) -> URL? {
+        profile(for: game)?.saveDirectory.flatMap { Paths.resolve(windowsPath: $0, inPrefix: paths.steamPrefix) }
+    }
+
+    /// Save klasörünü yedekler (değişmediyse yeni yedek almaz). Sonucu kullanıcıya gösterilecek metin olarak döner.
+    @discardableResult
+    func backupSaves(_ game: InstalledGame) async -> String? {
+        guard let source = saveFolder(for: game) else { return nil }
+        let backups = paths.backups, appID = game.appID
+        do {
+            let result = try await Task.detached {
+                try SaveBackup.backup(source: source, appID: appID, backups: backups)
+            }.value
+            if let folder = result.folder { lastBackups[appID] = folder }
+            switch result.kind {
+            case .created: return "Kayıtlar yedeklendi (\(result.folder?.lastPathComponent ?? ""))."
+            case .unchanged: return "Kayıtlar son yedekten beri değişmemiş; yeni yedek gerekmedi."
+            case .noSaves: return "Save klasöründe henüz kayıt yok."
+            }
+        } catch {
+            return "Kayıt yedeği alınamadı: \(error.localizedDescription)"
+        }
+    }
+
+    func backupNow(_ game: InstalledGame) {
+        Task { message = await backupSaves(game) ?? "Bu oyunun save klasörü profilde tanımlı değil." }
     }
 
     func launchMode(for game: InstalledGame) -> GameProfile.LaunchMode {
@@ -85,6 +116,9 @@ final class AppModel {
         if let problem = loaded.problem { message = problem }
         games = SteamLibrary.load(paths: paths)
         if selectedGame == nil { selection = games.first?.id }
+        lastBackups = Dictionary(uniqueKeysWithValues: games.compactMap { game in
+            SaveBackup.list(appID: game.appID, in: paths.backups).first.map { (game.appID, $0) }
+        })
     }
 
     func refreshStatus() async {
@@ -107,19 +141,24 @@ final class AppModel {
     func play(_ game: InstalledGame) {
         let profile = profile(for: game), choice = gameSettings[game.appID]
         launching[game.appID] = .now
-        switch LaunchPlan.mode(profile: profile, settings: choice) {
-        case .steam:
-            let plan = LaunchPlan.make(game: game, profile: profile, settings: choice, global: settings,
-                                       steamRunning: status.steamRunning, paths: paths)
-            if !status.steamRunning { steamSettings = settings }
-            run(plan, log: "steam", done: "\(game.name) Steam üzerinden başlatılıyor. Steam'de bir onay penceresi açılırsa onayla.")
-        case .direct:
-            Task { await playDirect(game, profile: profile, choice: choice) }
+        Task {
+            // Önce kayıtların yedeği (CLAUDE.md: save'e dokunabilecek her şeyden önce yedek).
+            let backupNote = await backupSaves(game).map { " " + $0 } ?? ""
+            switch LaunchPlan.mode(profile: profile, settings: choice) {
+            case .steam:
+                let plan = LaunchPlan.make(game: game, profile: profile, settings: choice, global: settings,
+                                           steamRunning: status.steamRunning, paths: paths)
+                if !status.steamRunning { steamSettings = settings }
+                run(plan, log: "steam",
+                    done: "\(game.name) Steam üzerinden başlatılıyor. Steam'de bir onay penceresi açılırsa onayla." + backupNote)
+            case .direct:
+                await playDirect(game, profile: profile, choice: choice, note: backupNote)
+            }
         }
     }
 
     /// Doğrudan başlatma: oyunun steam_api'si açık bir Steam'e bağlanmak ister; kapalıysa önce Steam açılır.
-    private func playDirect(_ game: InstalledGame, profile: GameProfile?, choice: GameSettings?) async {
+    private func playDirect(_ game: InstalledGame, profile: GameProfile?, choice: GameSettings?, note: String) async {
         if !status.steamRunning {
             openSteam()
             message = "\(game.name) için önce Steam açılıyor…"
@@ -139,7 +178,7 @@ final class AppModel {
         let plan = LaunchPlan.make(game: game, profile: profile, settings: choice, global: settings,
                                    steamRunning: true, paths: paths)
         run(plan, log: "game-\(game.appID)",
-            done: "\(game.name) doğrudan başlatılıyor (Steam'i atlayarak).")
+            done: "\(game.name) doğrudan başlatılıyor (Steam'i atlayarak)." + note)
     }
 
     func openSteam() {

@@ -384,6 +384,12 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - Profiller: `directX` alanı eklendi; Asylum (35140, `Binaries/ShippingPC-BmGame.exe`, doğrulanmadı), City (200260, alınmadı), Knight (DX11). Arayüzün "Grafik" satırı artık DirectX sürümüne göre: DX9 → "wined3d (OpenGL)", 10–12 → "D3DMetal 4". 26/26 test.
 - **Sıradaki:** kullanıcı Asylum'u alıp Köprü'nün Steam'inden kurar (~8 GB) → exe/launcher yolunu doğrula → ilk açılış (BmLauncher, DX9/wined3d, 32-bit).
 
+## 2026-10-17 — C3: otomatik save yedeği ✅ (kod) + Asylum indiriliyor (oturum limitinde durduruldu)
+- `SaveBackup.swift`: Oyna'dan önce profildeki save klasörü → `backups/<appid>/<yyyy-MM-dd_HHmmss>/` (APFS klonu), parmak izi (yol|boyut|mtime) aynıysa yeni yedek yok, son 10 tutulur. Arayüz: "Kayıtlar" satırı, Şimdi Yedekle / Save Klasörü / Yedekler. 29/29 test (son UI değişikliğinden sonra testler tekrar çalıştırılmadı; derleme uyarısız).
+- Arayüz: kurulmamış/indirilen oyun için "Kuruluyor / kurulu değil", boyut 0 ise "—". Görüntü aracı: `--select <appid>`.
+- **Asylum (35140) indirmesi 04:20'de başladı** (7,8 GB, ~41 Mbps). Bitip bitmediği kontrol edilmedi.
+- **Sıradaki oturum:** (1) `steamapps/appmanifest_35140.acf` StateFlags 4 mü bak; (2) `Binaries/` içinde exe/launcher adını doğrula, profiles.json'u düzelt; (3) Asylum ilk açılış (DX9/wined3d, 32-bit WoW64); (4) save klasörünü bulup profile ekle; (5) Witcher 3 "Kayıtlar" satırını `--select 292030 --snapshot` ile kontrol et.
+
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 güncellemesi)
 - Witcher 3 (build 25773555) **çalışıyor**: Steam açıkken `scripts/kwine steam 'C:\Program Files (x86)\Steam\steam.exe' -applaunch 292030 --launcher-skip`. Orijinal Steam dosyaları, proxy yok.

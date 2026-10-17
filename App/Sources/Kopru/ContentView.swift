@@ -99,6 +99,8 @@ private struct GameRow: View {
                 Text(game.name).lineLimit(2)
                 if running {
                     Text("Çalışıyor").font(.caption).foregroundStyle(.green)
+                } else if !game.isFullyInstalled {
+                    Text("Kuruluyor / kurulu değil").font(.caption).foregroundStyle(.secondary)
                 } else if game.needsUpdate {
                     Text("Güncelleme gerekiyor").font(.caption).foregroundStyle(.orange)
                 }
@@ -127,6 +129,12 @@ private struct GameDetail: View {
         if effectiveGraphics.metalHUD { parts.append("FPS göstergesi") }
         if let fps = effectiveGraphics.maxFPS { parts.append("en fazla \(fps) FPS") }
         return parts.joined(separator: " · ")
+    }
+
+    private var saveSummary: String {
+        guard model.saveFolder(for: game) != nil else { return "Save klasörü bilinmiyor (profiles.json → saveDirectory)" }
+        guard let last = model.lastBackups[game.appID] else { return "Henüz yedek yok; Oyna'ya basınca otomatik alınır" }
+        return "Son yedek: \(last.lastPathComponent.replacingOccurrences(of: "_", with: " ")) · Oyna'dan önce otomatik"
     }
 
     private var extraArguments: [String] {
@@ -181,7 +189,11 @@ private struct GameDetail: View {
                     .disabled(running || launching || !game.isFullyInstalled)
 
                     if launching { ProgressView().controlSize(.small) }
-                    if game.needsUpdate {
+                    if !game.isFullyInstalled {
+                        Label("Steam'de kuruluyor ya da kurulumu yarım; bitince Oyna açılır",
+                              systemImage: "arrow.down.circle")
+                            .foregroundStyle(.secondary)
+                    } else if game.needsUpdate {
                         Label("Steam önce güncelleme isteyecek", systemImage: "arrow.down.circle")
                             .foregroundStyle(.orange)
                     }
@@ -190,7 +202,7 @@ private struct GameDetail: View {
 
                 Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 8) {
                     GridRow { Text("Diskte").foregroundStyle(.secondary)
-                        Text(game.sizeOnDisk.formatted(.byteCount(style: .file))) }
+                        Text(game.sizeOnDisk > 0 ? game.sizeOnDisk.formatted(.byteCount(style: .file)) : "—") }
                     GridRow { Text("Steam AppID").foregroundStyle(.secondary)
                         Text(game.appID).textSelection(.enabled) }
                     if !extraArguments.isEmpty {
@@ -203,8 +215,23 @@ private struct GameDetail: View {
                     }
                     GridRow { Text("Grafik").foregroundStyle(.secondary)
                         Text(graphicsSummary) }
+                    GridRow { Text("Kayıtlar").foregroundStyle(.secondary)
+                        Text(saveSummary) }
                 }
                 .padding(.horizontal, 20)
+
+                if let saves = model.saveFolder(for: game) {
+                    HStack(spacing: 16) {
+                        Button("Şimdi Yedekle", systemImage: "externaldrive.badge.timemachine") { model.backupNow(game) }
+                        Button("Save Klasörü", systemImage: "folder") { model.reveal(saves) }
+                            .disabled(!FileManager.default.fileExists(atPath: saves.path))
+                        if let last = model.lastBackups[game.appID] {
+                            Button("Yedekler", systemImage: "clock.arrow.circlepath") { model.reveal(last) }
+                        }
+                    }
+                    .buttonStyle(.link)
+                    .padding(.horizontal, 20)
+                }
 
                 if profile?.executable != nil { launchSection }
 
