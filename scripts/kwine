@@ -11,6 +11,7 @@
 set -euo pipefail
 
 KOPRU="$HOME/Library/Application Support/Kopru"
+ENVFILE="${0:A:h:h}/config/wine.env"   # cx ortam değişkenleri (Köprü.app ile ortak)
 runtime=cx
 d3dmetal=1
 
@@ -27,47 +28,39 @@ if (( $# < 2 )); then
   exit 1
 fi
 
+PREFIX="$KOPRU/prefixes/$1"; shift
+
 case $runtime in
   stable)
     WINE="$KOPRU/runtime/wine-stable-11.0/Contents/Resources/wine/bin/wine"
+    export WINEPREFIX="$PREFIX"
+    export WINEDLLOVERRIDES="${WINEDLLOVERRIDES:-mscoree,mshtml=;winemenubuilder.exe=;gameoverlayrenderer,gameoverlayrenderer64=}"
+    export WINEDEBUG="${WINEDEBUG:--all}"
     ;;
   cx)
     RT="$KOPRU/runtime/crossover-26.3"
+    GPTK="$KOPRU/gptk/4.0-beta3/redist/lib"
     WINE="$RT/bin/wine"
-    # FreeType/GnuTLS (x86_64) Wine'ın yanındaki lib/deps klasöründen yüklenir.
-    export DYLD_FALLBACK_LIBRARY_PATH="$RT/lib/deps:/usr/local/lib:/usr/lib"
-    if (( d3dmetal )); then
-      GPTK="$KOPRU/gptk/4.0-beta3/redist/lib"
-      # tools/d3dmetal-hook: bu klasörü DLL arama listesinin başına koyar (d3d11/d3d12/dxgi → D3DMetal).
-      export KOPRU_D3DMETAL_DLLPATH="$GPTK/wine"
-      # CrossOver ntdll'i: D3DMetal'in macOS kütüphanesini erkenden yükler (Rosetta'ya kod bölgesi bildirimi).
-      export CX_APPLEGPTK_LIBD3DSHARED_PATH="$GPTK/external/libd3dshared.dylib"
-    fi
+    # config/wine.env'i oku (biçim dosyanın başında açıklanıyor).
+    section=all
+    while IFS= read -r line; do
+      [[ -z $line || $line == \#* ]] && continue
+      if [[ $line == \[*\] ]]; then section=${line:1:-1}; continue; fi
+      [[ $section == d3dmetal ]] && (( ! d3dmetal )) && continue
+      if [[ $line == *'?='* ]]; then key=${line%%\?=*}; value=${line#*\?=}; optional=1
+      else key=${line%%=*}; value=${line#*=}; optional=0; fi
+      value=${value//\$\{RUNTIME\}/$RT}
+      value=${value//\$\{GPTK\}/$GPTK}
+      value=${value//\$\{PREFIX\}/$PREFIX}
+      # "?=": dışarıdan verilmişse dokunma
+      (( optional )) && [[ -n ${(P)key-} ]] && continue
+      export "$key=$value"
+    done < "$ENVFILE"
     ;;
   *)
     print -u2 "Bilinmeyen runtime: $runtime (cx ya da stable)"
     exit 1
     ;;
 esac
-
-export WINEPREFIX="$KOPRU/prefixes/$1"; shift
-# DLL ayarları (boş = yükleme):
-#   mscoree,mshtml: Mono (.NET) ve Gecko (tarayıcı motoru) indirme pencerelerini kapat.
-#   winemenubuilder.exe: Wine'ın Mac'te menü/kısayol/dosya ilişkilendirmesi oluşturmasını engelle.
-#   gameoverlayrenderer(64): Steam'in oyun içi katmanı; oyunun çizimine kanca atıyor, Wine'da sık çöküyor.
-export WINEDLLOVERRIDES="${WINEDLLOVERRIDES:-mscoree,mshtml=;winemenubuilder.exe=;gameoverlayrenderer,gameoverlayrenderer64=}"
-if [[ $runtime == cx ]]; then
-  # MSync: senkronizasyon (mutex, event…) macOS Mach çekirdek nesneleriyle; wineserver'a gidip gelmekten hızlı.
-  # wineserver ile tüm süreçlerde aynı olmalı: değiştirmeden önce prefix'in wineserver'ını kapat.
-  # Kapatmak için: WINEMSYNC=0 scripts/kwine ...
-  export WINEMSYNC="${WINEMSYNC:-1}"
-  # Rosetta, oyunlara AVX/AVX2 desteğini bildirsin (bazı oyunlar bunu görmezse açılmıyor).
-  export ROSETTA_ADVERTISE_AVX=1
-  # Steam arayüzünü (CEF) tek süreçte çalıştır; yoksa pencere siyah kalıyor.
-  # patches/crossover-26.3/0003: bu değer yalnızca steamwebhelper.exe ana sürecine eklenir.
-  export KOPRU_STEAMWEBHELPER_ARGS="${KOPRU_STEAMWEBHELPER_ARGS---single-process}"
-fi
-# Wine'ın hata ayıklama çıktısını sustur; sorun ararken WINEDEBUG=+err gibi açılabilir.
-export WINEDEBUG="${WINEDEBUG:--all}"
 
 exec "$WINE" "$@"

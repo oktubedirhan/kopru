@@ -29,7 +29,13 @@ final class AppModel {
         status.steamRunning && !restartingSteam && (steamSettings ?? LaunchSettings()) != settings
     }
 
-    private var steam: Wine { Wine(paths: paths, prefixName: Paths.steamPrefixName, settings: settings) }
+    /// Wine ortam değişkenleri: paketteki config/wine.env kopyası.
+    private let envFile = WineEnvFile.bundled()
+
+    private var steam: Wine {
+        Wine(paths: paths, prefixName: Paths.steamPrefixName, settings: settings,
+             envFile: envFile ?? WineEnvFile(text: ""))
+    }
 
     var selectedGame: InstalledGame? { games.first { $0.id == selection } }
 
@@ -46,7 +52,9 @@ final class AppModel {
 
     func reload() {
         let fm = FileManager.default
-        if !fm.isExecutableFile(atPath: paths.wine.path) {
+        if envFile == nil {
+            setupProblem = "Uygulama paketinde wine.env yok. Uygulamayı scripts/build-app.sh ile derle."
+        } else if !fm.isExecutableFile(atPath: paths.wine.path) {
             setupProblem = "Wine bulunamadı: \(paths.wine.path)\nÖnce scripts/build-crossover-wine.sh all çalıştırılmalı."
         } else if !fm.fileExists(atPath: paths.steamExe.path) {
             setupProblem = "Steam kurulu değil: \(paths.steamExe.path)"

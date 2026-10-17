@@ -332,6 +332,16 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - Push öncesi gizli bilgi taraması yapıldı (şifre/anahtar yok). Notlarda Steam hesap numarası (accountid) geçiyor; depo gizli.
 - Bundan sonra: her çalışan aşamadan sonra `git add -A && git commit` + `git push`.
 
+## 2026-10-17 — Plan (onaylandı) ve B1/B3: Wine ayarları tek kaynakta, README ✅
+- Kalan işler planı (kullanıcı onayladı): A kullanıcı testleri · B sağlamlaştırma (B1 tek kaynak, B2 `Z:` kaldırma, B3 README) · C uygulama (C1 profil dosyası, C2 doğrudan başlatma, C3 otomatik save yedeği, C4 günlük görüntüleyici, C5 prefix sihirbazı) · D araştırmalar (nested exception, 32-bit, DX9, Vulkan) · E yeni oyunlar (rafta). Sıra: B1 → B3 → B2 → C1 → C2 → C3 → C4 → C5.
+- **B1:** `config/wine.env` = cx runtime ortam değişkenlerinin tek kaynağı. Biçim: `A=değer`, `A?=değer` (kwine'da dışarıdan verilen kazanır), `[all]`/`[d3dmetal]`, `${RUNTIME}` `${GPTK}` `${PREFIX}`.
+  - `scripts/kwine` dosyayı okuyor (stable runtime ayrı, değişmedi). `build-app.sh` dosyayı `Contents/Resources/wine.env`'e kopyalıyor; `WineEnvFile.swift` okuyor; paket içinde yoksa uygulama "Kurulum eksik" diyor.
+  - **Doğrulama:** eski ve yeni kwine'ın ortamı karşılaştırıldı (son satır `export -p` ile değiştirilerek): varsayılan 9 değişken, `--no-d3dmetal` 7, `WINEMSYNC=0` dışarıdan, stable 3 → hepsi AYNI. (İlk karşılaştırmada stable'da `gameoverlayrenderer` eksik çıktı, düzeltildi.)
+  - Öğrenilen: `/usr/bin/env` ile yazdırınca `DYLD_*` görünmüyor, SIP siliyor; kabuğun kendi `export -p`'si siler değil.
+  - **Testler:** 18/18. Yeni `WineEnvFileTests`: ayrıştırma, depodaki dosya, **kwine eşlik testi** (gerçek kwine'ı `export -p` ile çalıştırıp `Wine.environment` ile karşılaştırıyor; D3DMetal açık/kapalı). Kasıtlı bozma denemesi (kwine'a `WINEMSYNC=5`) testi düşürdü → test gerçekten yakalıyor; kwine geri alındı.
+  - Uygulama yeniden derlendi, paket içinde `wine.env` var, normal açılıyor (kendi görüntüsü).
+- **B3:** README yol haritası durum sütunlu (1–3, 6 ✅; 4 rafta; 5 sürüyor), "Çalışan oyun: Witcher 3".
+
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 güncellemesi)
 - Witcher 3 (build 25773555) **çalışıyor**: Steam açıkken `scripts/kwine steam 'C:\Program Files (x86)\Steam\steam.exe' -applaunch 292030 --launcher-skip`. Orijinal Steam dosyaları, proxy yok.

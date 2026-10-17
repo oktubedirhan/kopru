@@ -1,37 +1,24 @@
 import Foundation
 
-/// Wine'ı Köprü ayarlarıyla başlatır. scripts/kwine'ın (cx runtime) Swift karşılığı;
-/// ortam değişkenlerinin açıklamaları o betikte de var.
+/// Wine'ı Köprü ayarlarıyla başlatır. Ortam değişkenleri config/wine.env'den gelir
+/// (scripts/kwine ile ortak); açıklamaları o dosyada.
 struct Wine: Sendable {
     let paths: Paths
     let prefixName: String
     var d3dmetal = true
     var settings = LaunchSettings()
+    let envFile: WineEnvFile
 
     var prefix: URL { paths.prefix(prefixName) }
 
     var environment: [String: String] {
         var env = ProcessInfo.processInfo.environment
         // Dışarıdan gelen Wine/D3DMetal/Metal ayarları karışmasın.
-        for key in env.keys where ["WINE", "DYLD_", "CX_", "D3DM_", "MTL_", "KOPRU_"].contains(where: key.hasPrefix) {
+        for key in env.keys where ["WINE", "DYLD_", "CX_", "D3DM_", "MTL_", "KOPRU_", "ROSETTA_"].contains(where: key.hasPrefix) {
             env[key] = nil
         }
-        env["WINEPREFIX"] = prefix.path
-        env["WINEDEBUG"] = "-all"
-        // FreeType/GnuTLS (x86_64) runtime'ın yanındaki lib/deps'ten yüklenir.
-        env["DYLD_FALLBACK_LIBRARY_PATH"] = paths.runtime.appending(path: "lib/deps").path + ":/usr/local/lib:/usr/lib"
-        if d3dmetal {
-            // tools/d3dmetal-hook bu klasörü DLL arama listesinin başına koyar (dxgi/d3d11/d3d12 → D3DMetal).
-            env["KOPRU_D3DMETAL_DLLPATH"] = paths.gptkLib.appending(path: "wine").path
-            // CrossOver ntdll'i D3DMetal'in macOS kütüphanesini erkenden yükler.
-            env["CX_APPLEGPTK_LIBD3DSHARED_PATH"] = paths.gptkLib.appending(path: "external/libd3dshared.dylib").path
-        }
-        env["WINEDLLOVERRIDES"] = "mscoree,mshtml=;winemenubuilder.exe=;gameoverlayrenderer,gameoverlayrenderer64="
-        // wineserver ile bütün süreçlerde aynı olmalı.
-        env["WINEMSYNC"] = "1"
-        env["ROSETTA_ADVERTISE_AVX"] = "1"
-        // patches/crossover-26.3/0003: Steam arayüzü tek süreçte (yoksa pencere siyah).
-        env["KOPRU_STEAMWEBHELPER_ARGS"] = "--single-process"
+        env.merge(envFile.environment(runtime: paths.runtime, gptk: paths.gptkLib,
+                                      prefix: prefix, d3dmetal: d3dmetal)) { $1 }
         env.merge(settings.environment) { $1 }
         return env
     }

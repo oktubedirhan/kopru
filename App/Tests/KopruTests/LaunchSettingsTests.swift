@@ -28,7 +28,7 @@ struct LaunchSettingsTests {
     @Test("Wine ortamına eklenir; dışarıdan gelen MTL_/D3DM_ değişkenleri silinir")
     func wineEnvironment() {
         let wine = Wine(paths: Paths(root: URL(fileURLWithPath: "/tmp/kopru")), prefixName: "steam",
-                        settings: LaunchSettings(metalHUD: false, maxFPS: 30))
+                        settings: LaunchSettings(metalHUD: false, maxFPS: 30), envFile: try! Repo.wineEnv())
         let env = wine.environment
         #expect(env["D3DM_MAX_FPS"] == "30")
         #expect(env["MTL_HUD_ENABLED"] == nil)
