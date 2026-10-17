@@ -342,6 +342,18 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
   - Uygulama yeniden derlendi, paket içinde `wine.env` var, normal açılıyor (kendi görüntüsü).
 - **B3:** README yol haritası durum sütunlu (1–3, 6 ✅; 4 rafta; 5 sürüyor), "Çalışan oyun: Witcher 3".
 
+## 2026-10-17 — B2: `Z:` → `/` kaldırıldı + bulunan Wine hatası (yama 0006) ✅
+- **Neden:** `prefixes/steam/dosdevices/z:` → `/`: Windows programları Mac'in tüm dosyalarını görüyordu (`cmd /c dir Z:\` → Applications, bin, etc…). GameToMac de kaldırıyor.
+- **Araştırma (kaynak):** `z:` yalnızca `server.c: setup_config_dir()` içinde, `dosdevices` klasörü **ilk kez** oluşturulurken yaratılıyor → kaldırınca geri gelmiyor. `file.c`'deki tek kullanım kozmetik (yol kısaltma). `d:`–`h:` ise takılı diskler için mountmgr'ın her açılışta dinamik oluşturduğu bağlantılar (ayrı konu, dokunulmadı). `Documents` vb. Mac bağlantıları Steam Cloud için bilerek korundu.
+- **Uygulama:** Steam `-shutdown` → `rm dosdevices/z:` (geri almak: `ln -s / dosdevices/z:`).
+- **Ortaya çıkan hata:** Mac yolundan program başlatmak (`kwine steam /…/dxgi-probe.exe`, test araçlarımız böyle çalışıyor) **SIGSEGV, çıkış 139**.
+  - macOS çökme raporu (`~/Library/Logs/DiagnosticReports/wine-*.ips`): `init_startup_info+3972`, `rip` = ntdll.so+`0xec40`, adres 0x0. Makine kodu: `get_full_path+0x290` → `cmpw $0x0,(%r15,%rax)` = `init_unicode_string(nt_name, ret)` ile `ret` NULL.
+  - **Kök neden:** `find_drive_nt_root()` yol hiçbir sürücünün altında değilse `STATUS_SUCCESS` döndürüp sonucu NULL bırakıyor. `unix_to_nt_file_name()` bunu kontrol edip `\??\unix\…` yoluna düşüyor; `get_full_path()` kontrol etmiyor. `z:` → `/` varken her yol Z:'ye düştüğü için hiç görülmüyordu. (Upstream Wine'da da aynı olabilir; doğrulanmadı.)
+  - **Yama 0006** (`patches/crossover-26.3/0006-ntdll-get_full_path-unix-path-without-drive.patch`): `get_full_path` Mac yolları için `unix_to_nt_file_name()` kullanıyor.
+- **Doğrulama (çalıştı):** derleme + kurulum; `dxgi-probe` Mac yolundan → AMD Compatibility Mode, D3D11 FL 12.1, D3D12 TAMAM, çıkış 0; `if exist Z:\` → "Z YOK"; Steam açılış → `LogOnResponse 'OK'` (22 sn), EConnect 0; Wine çalıştıktan sonra `z:` yeniden oluşmadı.
+- **Zararsız yeni uyarı:** terminal Mac klasöründeyken `cmd` "could not open working directory unix\…, starting in the Windows directory" diyor (Mac klasörü artık bir sürücüye eşlenmiyor).
+- **Denenmedi:** Witcher 3'ün `z:` olmadan açılması (kullanıcı testi A4 ile birlikte). Diğer test prefix'lerinde (`test`, `gptk-test`, `cx-test`) `z:` duruyor; yalnızca `steam` prefix'i değişti. C5 (prefix sihirbazı) yeni prefix'lerde `z:`'yi otomatik kaldırmalı.
+
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 güncellemesi)
 - Witcher 3 (build 25773555) **çalışıyor**: Steam açıkken `scripts/kwine steam 'C:\Program Files (x86)\Steam\steam.exe' -applaunch 292030 --launcher-skip`. Orijinal Steam dosyaları, proxy yok.

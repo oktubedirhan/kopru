@@ -1,0 +1,14 @@
+--- a/wine/dlls/ntdll/unix/file.c	2026-10-17 03:52:10
++++ b/wine/dlls/ntdll/unix/file.c	2026-10-17 03:52:10
+@@ -4393,7 +4393,10 @@
+     ULONG prefix_len, len = max( ARRAY_SIZE(unix_prefixW), wcslen(curdir) ) + strlen(name) + 1;
+ 
+     /* special case for Unix file name */
+-    if (name[0] == '/' && !find_drive_nt_root( name, strlen(name), &ret, FILE_OPEN )) goto done;
++    /* Köprü: find_drive_nt_root, yol hiçbir sürücünün altında değilse (ör. z: -> / kaldırılmışsa)
++     * STATUS_SUCCESS döndürüp ret'i NULL bırakır; burada NULL kullanılınca wine çöküyordu (SIGSEGV).
++     * unix_to_nt_file_name aynı işi yapar ve o durumda \??\unix\... yolu verir. */
++    if (name[0] == '/' && !unix_to_nt_file_name( name, &ret, FILE_OPEN )) goto done;
+ 
+     if (!(ret = malloc( len * sizeof(WCHAR) ))) return STATUS_NO_MEMORY;
+ 
