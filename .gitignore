@@ -1,0 +1,8 @@
+# Derleme çıktıları
+/build/
+/App/.build/
+/App/.swiftpm/
+.DS_Store
+
+# Test araçlarının derlenmiş hali (tools/*/build.sh ile yeniden üretilir)
+/tools/**/*.exe

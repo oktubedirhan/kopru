@@ -1,0 +1,36 @@
+--- a/wine/dlls/ntdll/unix/sync.c
++++ b/wine/dlls/ntdll/unix/sync.c
+@@ -2071,7 +2071,17 @@
+     SERVER_END_REQ;
+     return ret;
+ }
++
+ 
++/* Köprü: Windows (MS x64) tarafındaki çağıran, BOOLEAN argümanın yalnızca alt baytını yazar;
++ * register'ın/yığın yuvasının geri kalanı çöp olabilir. Apple clang ise x86-64 SysV'deki
++ * "küçük tamsayı argümanlar 32 bite genişletilmiş gelir" varsayımıyla tüm register'a bakar.
++ * volatile bir bayta yazıp geri okumak, derleyiciyi gerçekten tek bayt okumaya zorlar. */
++static inline BOOLEAN kopru_clean_boolean( BOOLEAN value )
++{
++    volatile BOOLEAN byte = value;
++    return byte;
++}
+ 
+ /**************************************************************************
+  *           NtQueryDirectoryObject   (NTDLL.@)
+@@ -2081,8 +2091,14 @@
+                                         ULONG *context, ULONG *ret_size )
+ {
+     unsigned int status, i, count, total_len, pos, used_size, used_count, strpool_head;
+-    ULONG index = restart ? 0 : *context;
++    ULONG index;
+     struct directory_entry *entries;
++
++    /* Köprü: üst baytlardaki çöp restart'ı hep TRUE yapıyordu; Steam'in makine kimliği
++     * iş parçacığı (MachineIDInfoThread) bir nesne dizininin ilk kaydını sonsuza kadar okuyordu. */
++    single_entry = kopru_clean_boolean( single_entry );
++    restart = kopru_clean_boolean( restart );
++    index = restart ? 0 : *context;
+ 
+     if (!(entries = malloc( size ))) return STATUS_NO_MEMORY;
+ 

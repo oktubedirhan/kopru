@@ -1,0 +1,54 @@
+--- a/wine/dlls/kernelbase/process.c
++++ b/wine/dlls/kernelbase/process.c
+@@ -503,6 +503,34 @@
+ /**********************************************************************
+  *           CreateProcessInternalW   (kernelbase.@)
+  */
++/* Köprü: Steam'in arayüz sürecine (steamwebhelper.exe) ek Chromium seçenekleri.
++ *
++ * KOPRU_STEAMWEBHELPER_ARGS ayarlıysa (ör. "--single-process"), değeri yalnızca ana tarayıcı
++ * sürecinin komut satırına eklenir. Çocuk süreçler (--type=gpu-process, renderer...) ayarlarını
++ * zaten ana süreçten alır. Steam kendi -cef-* seçeneklerinin bir kısmını iletmiyor; Wine'ın Mac
++ * sürücüsünde başka süreçlerin açtığı çocuk pencereler siyah kalabiliyor. */
++static WCHAR *kopru_steamwebhelper_cmdline( const WCHAR *app_name, const WCHAR *cmdline )
++{
++    WCHAR extra[512];
++    const WCHAR *base;
++    DWORD len;
++    SIZE_T size;
++    WCHAR *ret;
++
++    base = wcsrchr( app_name, '\\' );
++    base = base ? base + 1 : app_name;
++    if (wcsicmp( base, L"steamwebhelper.exe" ) || wcsstr( cmdline, L"--type=" )) return NULL;
++
++    len = GetEnvironmentVariableW( L"KOPRU_STEAMWEBHELPER_ARGS", extra, ARRAY_SIZE(extra) );
++    if (!len || len >= ARRAY_SIZE(extra)) return NULL;
++
++    size = wcslen( cmdline ) + 1 + len + 1;
++    if (!(ret = RtlAllocateHeap( GetProcessHeap(), 0, size * sizeof(WCHAR) ))) return NULL;
++    swprintf( ret, size, L"%s %s", cmdline, extra );
++    TRACE( "kopru: steamwebhelper extra args %s\n", debugstr_w(extra) );
++    return ret;
++}
++
+ BOOL WINAPI DECLSPEC_HOTPATCH CreateProcessInternalW( HANDLE token, const WCHAR *app_name, WCHAR *cmd_line,
+                                                       SECURITY_ATTRIBUTES *process_attr,
+                                                       SECURITY_ATTRIBUTES *thread_attr,
+@@ -564,6 +592,16 @@
+             FIXME("HACK: not starting powershell.exe.\n");
+             SetLastError( ERROR_FILE_NOT_FOUND );
+             return FALSE;
++        }
++    }
++
++    /* Köprü: steamwebhelper ek seçenekleri (yukarıdaki açıklamaya bak) */
++    {
++        WCHAR *kopru_cmdline = kopru_steamwebhelper_cmdline( app_name, tidy_cmdline );
++        if (kopru_cmdline)
++        {
++            if (tidy_cmdline != cmd_line) HeapFree( GetProcessHeap(), 0, tidy_cmdline );
++            tidy_cmdline = kopru_cmdline;
+         }
+     }
+ 

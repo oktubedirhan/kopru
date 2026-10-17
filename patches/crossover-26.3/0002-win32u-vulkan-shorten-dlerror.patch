@@ -1,0 +1,13 @@
+--- a/wine/dlls/win32u/vulkan.c
++++ b/wine/dlls/win32u/vulkan.c
+@@ -3018,7 +3018,9 @@
+ 
+     if (!(vulkan_handle = dlopen( libvulkan, RTLD_NOW )))
+     {
+-        ERR( "Failed to load %s: %s\n", libvulkan, dlerror() );
++        /* Köprü: macOS'un dlerror() mesajı denenen tüm yolları sıralıyor; Wine'ın log tamponunu
++         * taşırıp abort() ettiriyor (dlls/ntdll/unix/debug.c). Mesajı kısalt. */
++        ERR( "Failed to load %s: %.200s\n", libvulkan, dlerror() );
+         return;
+     }
+ 
