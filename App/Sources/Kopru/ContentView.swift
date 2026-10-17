@@ -12,6 +12,9 @@ struct ContentView: View {
                                        description: Text(problem))
             } else {
                 NavigationSplitView {
+                    // Seçim koddan değişince (ör. --select) satır ekrana kaydırılır: macOS'ta ekran dışındaki
+                    // satır koddan seçilirse liste başka bir satırı seçebiliyor.
+                    ScrollViewReader { proxy in
                     List(selection: $model.selection) {
                         Section("Kurulu") {
                             ForEach(model.games) { game in
@@ -25,6 +28,10 @@ struct ContentView: View {
                                 ForEach(model.available) { AvailableRow(game: $0).tag($0.id) }
                             }
                         }
+                    }
+                    .onChange(of: model.selection, initial: true) { _, id in
+                        if let id { proxy.scrollTo(id) }
+                    }
                     }
                     .navigationSplitViewColumnWidth(min: 220, ideal: 260)
                     .overlay {
@@ -346,8 +353,14 @@ private struct AvailableDetail: View {
                     .overlay { CoverImage(url: game.heroImage) }
                     .clipped()
                     .overlay(alignment: .bottomLeading) {
-                        Text(game.name).font(.largeTitle.bold()).foregroundStyle(.white)
-                            .shadow(radius: 4).padding(20)
+                        if let logo = game.logoImage, let image = NSImage(contentsOf: logo) {
+                            Image(nsImage: image).resizable().scaledToFit()
+                                .frame(maxWidth: 280, maxHeight: 90)
+                                .shadow(radius: 6).padding(20)
+                        } else {
+                            Text(game.name).font(.largeTitle.bold()).foregroundStyle(.white)
+                                .shadow(radius: 4).padding(20)
+                        }
                     }
                     .background(.quaternary)
 

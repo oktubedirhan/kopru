@@ -19,6 +19,8 @@ struct Paths: Sendable {
 
     var logs: URL { root.appending(path: "logs") }
     var backups: URL { root.appending(path: "backups") }
+    /// Kurulu olmayan oyunların Steam'den indirilen görselleri (GameImages)
+    var images: URL { root.appending(path: "images") }
     /// Kullanıcının oyun profili ekleri (paketteki profiles.json'u alan alan ezer).
     var userProfiles: URL { root.appending(path: "profiles.json") }
 

@@ -119,11 +119,34 @@ final class AppModel {
         }
         if let problem = loaded.problem { message = problem }
         games = SteamLibrary.load(paths: paths)
-        available = SteamLibrary.available(profiles: profiles, installed: games, imageCache: paths.steamLibraryCache)
+        reloadAvailable()
         if selectedGame == nil && selectedAvailable == nil { selection = games.first?.id ?? available.first?.id }
+        fetchMissingImages()
         lastBackups = Dictionary(uniqueKeysWithValues: games.compactMap { game in
             SaveBackup.list(appID: game.appID, in: paths.backups).first.map { (game.appID, $0) }
         })
+    }
+
+    private func reloadAvailable() {
+        available = SteamLibrary.available(profiles: profiles, installed: games,
+                                           imageCache: paths.steamLibraryCache, downloaded: paths.images)
+    }
+
+    /// Bu oturumda görseli için indirme denenen oyunlar (başarısız olan her yenilemede tekrar denenmesin).
+    private var imageAttempts: Set<String> = []
+
+    /// Görseli olmayan kurulu-değil oyunlar için Steam'in resim sunucusundan indir, bitince listeyi yenile.
+    private func fetchMissingImages() {
+        let folder = paths.images
+        let missing = available.filter { $0.capsuleImage == nil && !imageAttempts.contains($0.appID) }.map(\.appID)
+        guard !missing.isEmpty else { return }
+        imageAttempts.formUnion(missing)
+        Task {
+            await withTaskGroup(of: Void.self) { group in
+                for appID in missing { group.addTask { await GameImages.download(appID: appID, to: folder) } }
+            }
+            reloadAvailable()
+        }
     }
 
     func refreshStatus() async {

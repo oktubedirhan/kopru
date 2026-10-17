@@ -27,6 +27,7 @@ struct AvailableGame: Identifiable, Hashable, Sendable {
     /// Steam görselleri yalnızca hesapta görünen oyunlar için önbellekte olur.
     let heroImage: URL?
     let capsuleImage: URL?
+    let logoImage: URL?
 
     var id: String { appID }
 }
@@ -90,17 +91,21 @@ enum SteamLibrary {
             }
     }
 
-    /// Profiles.json'daki oyunlardan kurulu olmayanlar, ada göre sıralı.
+    /// Profiles.json'daki oyunlardan kurulu olmayanlar, ada göre sıralı. Görseller önce Steam'in önbelleğinden,
+    /// yoksa Köprü'nün indirdiklerinden (downloaded); header.jpg yalnızca son çare.
     static func available(profiles: [String: GameProfile], installed: [InstalledGame],
-                          imageCache: URL) -> [AvailableGame] {
+                          imageCache: URL, downloaded: URL? = nil) -> [AvailableGame] {
         let installedIDs = Set(installed.map(\.appID))
         return profiles
             .filter { !installedIDs.contains($0.key) && !hiddenAppIDs.contains($0.key) }
             .map { appID, profile in
-                let images = findImages(appID: appID, in: imageCache)
+                var images = findImages(appID: appID, in: imageCache)
+                if let downloaded { images.merge(findImages(appID: appID, in: downloaded)) { steam, _ in steam } }
                 return AvailableGame(appID: appID, name: profile.name ?? "App \(appID)",
-                                     heroImage: images["library_hero.jpg"],
-                                     capsuleImage: images["library_capsule.jpg"] ?? images["library_600x900.jpg"])
+                                     heroImage: images["library_hero.jpg"] ?? images["header.jpg"],
+                                     capsuleImage: images["library_capsule.jpg"] ?? images["library_600x900.jpg"]
+                                         ?? images["header.jpg"],
+                                     logoImage: images["logo.png"])
             }
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }

@@ -2,7 +2,8 @@ import AppKit
 
 /// Hata ayıklama: uygulama kendi penceresini PNG olarak kaydeder.
 /// Ekran kaydı izni gerekmez, çünkü yalnızca kendi çizdiğimiz görüntüyü okuyoruz.
-/// Kullanım: open -n build/Köprü.app --args --snapshot /yol/pencere.png
+/// Kullanım: open -g -n build/Köprü.app --args [--select <appid>] --snapshot /yol/pencere.png
+/// (-g: pencere öne gelmesin; öne gelirse o sırada yazılan harfler listede "yazarak seç" ile başka oyunu seçer.)
 @MainActor
 enum WindowSnapshot {
     /// Komut satırında "--snapshot <yol>" varsa o yolu döndürür.

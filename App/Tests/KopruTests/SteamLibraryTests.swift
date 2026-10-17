@@ -53,6 +53,26 @@ struct SteamLibraryTests {
         #expect(list.map(\.name) == ["App 1", "Counter-Strike 2", "Elden Ring"])
         #expect(list[1].capsuleImage?.lastPathComponent == "library_600x900.jpg")
         #expect(list[2].heroImage == nil)
+
+        // Köprü'nün indirdiği görseller: Steam önbelleğindeki önce gelir; header.jpg yalnızca son çare.
+        let downloaded = fx.root.appending(path: "images")
+        try fx.write("x", to: downloaded.appending(path: "1245620/header.jpg"))
+        try fx.write("x", to: downloaded.appending(path: "1245620/logo.png"))
+        try fx.write("x", to: downloaded.appending(path: "730/library_600x900.jpg"))
+        let merged = SteamLibrary.available(profiles: profiles, installed: [installed],
+                                            imageCache: fx.paths.steamLibraryCache, downloaded: downloaded)
+        #expect(merged[1].capsuleImage?.path.contains("librarycache") == true)
+        #expect(merged[2].capsuleImage?.lastPathComponent == "header.jpg")
+        #expect(merged[2].heroImage?.lastPathComponent == "header.jpg")
+        #expect(merged[2].logoImage?.lastPathComponent == "logo.png")
+    }
+
+    @Test("appdetails yanıtından header_image okunur")
+    func appDetailsHeader() {
+        let json = #"{"4921760":{"success":true,"data":{"header_image":"https://example.com/h.jpg?t=1"}}}"#
+        #expect(GameImages.headerImage(appDetails: Data(json.utf8), appID: "4921760")?.absoluteString
+                == "https://example.com/h.jpg?t=1")
+        #expect(GameImages.headerImage(appDetails: Data(#"{"1":{"success":false}}"#.utf8), appID: "1") == nil)
     }
 
     @Test("libraryfolders.vdf'teki ikinci kütüphane (başka sürücü) de okunur")
