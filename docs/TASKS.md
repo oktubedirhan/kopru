@@ -432,6 +432,13 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - Öneri: oyunu kullanıcı GameToMac arayüzünden silsin (biz dokunmuyoruz); uygulama (737 MB) kaynak kodu başvurusu olarak şimdilik kalabilir. Not: bizim kopya APFS klonu, bloklar ortak → silince açılan yer 69 GB'tan az olabilir (önce/sonra `df -h /`). Boş yer şu an 575 GB.
 - **Silindi (kullanıcı isteğiyle):** GameToMac arayüzündeki Uninstall bir şey silmedi (klasör 70 GB duruyordu). Kullanıcının açık onayıyla: GameToMac kapatıldı (`osascript … quit`), bizim prefix'te `Game Library`'ye bağlantı olmadığı doğrulandı, `rm -rf …/Game Library/Games/witcher3`. Boş yer 575 → **629 GB** (+54 GB; ortak klon blokları yüzünden 69 değil). Bizim Witcher 3 kopyası ve yedekler yerinde. Uygulama duruyor.
 
+## 2026-10-17 — GameToMac'in oyun listesi Köprü profillerine (denenmedi)
+- GameToMac 19 oyun destekliyor (`Resources/games.json`). Her biri için oyuna özel Wine dosyaları (ör. AoE2: değiştirilmiş `ntdll`; AoM Retold: `winemac`), bazılarında DXMT (açık kaynak DX11→Metal) ve Rockstar için ayrı grafik katmanı var. Bunlar onların motoruna göre derlenmiş; kopyalanmadı.
+- **Kullanıcı kararı: "kendi yolumuzla".** Profil ekle; bir oyun kurulunca GameToMac'in belgesini (`Sources/<OYUN>.md`) okuyup sorunu anla, düzeltmeyi kendimiz yaz, DXMT gibi bileşenleri asıl açık kaynak projesinden al. GameToMac'in Wine kaynağı (`wine-source.tar.gz`, LGPL) bu kararla kullanılmıyor.
+- `profiles.json`'a 17 oyun eklendi (Witcher 3 zaten vardı; Diablo II: Resurrected Steam'de değil, Battle.net, eklenmedi). Hepsinde `"Denenmedi"` notu, ad + DirectX sürümü (kendi bilgimle) + bilinen engeller (online/anti-cheat, Rockstar/Battle.net başlatıcısı). **Exe yolları eklenmedi**: games.json yalnızca exe adını veriyor (Witcher'da `witcher3.exe` ama gerçek yol `bin/x64_dx12/…`), oyun kurulunca doğrulanacak. Heroes III'ün Steam numarası (4921760) doğrulanmadı.
+- `rendererDescription`: DirectX 9 ve öncesi (8, DirectDraw "7") wined3d gösteriliyor. Test eklendi; 30/30.
+- Sıradaki: kullanıcı hangi oyunlara sahipse onlardan biriyle (ör. Skyrim SE, AoE II DE) ilk deneme.
+
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 akşam: Batman AA)
 - **Asylum (35140) çalışıyor, ses bozuk.** Başlatma: `cd …/Batman Arkham Asylum GOTY/Binaries && SteamAppId=35140 SteamGameId=35140 scripts/kwine steam "$PWD/BmLauncher.exe"` → başlatıcıda Play. Wine Mono 10.4.1 prefix'te kurulu, `wine.env`'de `mscoree` artık kapalı değil.
@@ -444,6 +451,7 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
   5. Sonunda kaynağı `patch -R` ile geri al, asıl DLL'i geri koy.
 - **Yedek testi:** Köprü'de Asylum → "Şimdi Yedekle" → `~/.kopru/backups/35140/<tarih>/remote/Save0.sgd` oluşmalı.
 - Witcher 3 "Kayıtlar" satırı kontrolü (önceki listeden) hâlâ yapılmadı.
+- GameToMac listesinden 17 oyun profili eklendi (denenmedi); kullanıcının sahip olduğu biriyle ilk deneme sırada.
 
 ## 📌 Yeni oturum için özet (2026-10-17 güncellemesi)
 - Witcher 3 (build 25773555) **çalışıyor**: Steam açıkken `scripts/kwine steam 'C:\Program Files (x86)\Steam\steam.exe' -applaunch 292030 --launcher-skip`. Orijinal Steam dosyaları, proxy yok.

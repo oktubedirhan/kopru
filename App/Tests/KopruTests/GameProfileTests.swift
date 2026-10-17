@@ -40,6 +40,7 @@ struct GameProfileTests {
     @Test("Grafik yolu açıklaması DirectX sürümüne göre")
     func renderer() {
         #expect(GameProfile(directX: "9").rendererDescription.contains("wined3d"))
+        #expect(GameProfile(directX: "7").rendererDescription.contains("wined3d"))
         #expect(GameProfile(directX: "11").rendererDescription.contains("D3DMetal"))
         #expect(GameProfile().rendererDescription.contains("D3DMetal"))
     }

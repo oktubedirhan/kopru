@@ -25,6 +25,91 @@
       "directX": "11",
       "executable": "Binaries/Win64/BatmanAK.exe",
       "notes": "Serinin son oyunu (2015). Henüz kurulmadı; exe yolu ve save klasörü doğrulanmadı. Denuvo Antitamper: Denuvo etkinleştirme sınırı yüzünden oyunu tek prefix'te (steam) tut."
+    },
+    "1466860": {
+      "name": "Age of Empires IV",
+      "directX": "11",
+      "notes": "Denenmedi (GameToMac listesinde var). Exe kurulum klasöründe RelicCardinal.exe olmalı; doğrulanmadı."
+    },
+    "813780": {
+      "name": "Age of Empires II: Definitive Edition",
+      "directX": "11",
+      "notes": "Denenmedi (GameToMac listesinde var). GameToMac bu oyun için ntdll'i değiştirmiş: hazır Wine'da bir sorun var demek; kurunca belgesini okuyup kendimiz çözeceğiz."
+    },
+    "933110": {
+      "name": "Age of Empires III: Definitive Edition",
+      "directX": "11",
+      "notes": "Denenmedi (GameToMac listesinde var). "
+    },
+    "1934680": {
+      "name": "Age of Mythology: Retold",
+      "directX": "12",
+      "notes": "Denenmedi (GameToMac listesinde var). GameToMac Mac pencere/fare kodunu (winemac) değiştirmiş: fare ya da pencere sorunu bekle."
+    },
+    "1677280": {
+      "name": "Company of Heroes 3",
+      "directX": "12",
+      "notes": "Denenmedi (GameToMac listesinde var). "
+    },
+    "2732960": {
+      "name": "Command & Conquer: Generals – Zero Hour",
+      "directX": "8",
+      "notes": "Denenmedi (GameToMac listesinde var). DirectX 8: wined3d (OpenGL) üzerinden, D3DMetal yok."
+    },
+    "2229850": {
+      "name": "Command & Conquer: Red Alert 2 + Yuri's Revenge",
+      "directX": "7",
+      "notes": "Denenmedi (GameToMac listesinde var). DirectDraw (2D, çok eski): wined3d üzerinden. Ekran çözünürlüğü sorunu bekle."
+    },
+    "730": {
+      "name": "Counter-Strike 2",
+      "directX": "11",
+      "notes": "Denenmedi (GameToMac listesinde var). Online oyun, VAC anti-cheat. Anti-cheat'e dokunulmaz; kendiliğinden çalışmazsa oynanmaz. GameToMac DXMT kullanmış."
+    },
+    "2357570": {
+      "name": "Overwatch",
+      "directX": "11",
+      "notes": "Denenmedi (GameToMac listesinde var). Yalnızca online, Battle.net hesabı gerekir. Anti-cheat'e dokunulmaz. GameToMac DXMT kullanmış."
+    },
+    "2344520": {
+      "name": "Diablo IV",
+      "directX": "12",
+      "notes": "Denenmedi (GameToMac listesinde var). Sürekli online, Battle.net hesabı gerekir. Anti-cheat'e dokunulmaz."
+    },
+    "2694490": {
+      "name": "Path of Exile 2",
+      "directX": "12",
+      "notes": "Denenmedi (GameToMac listesinde var). Online oyun. Steam sürümü: PathOfExileSteam.exe."
+    },
+    "990080": {
+      "name": "Hogwarts Legacy",
+      "directX": "12",
+      "notes": "Denenmedi (GameToMac listesinde var). "
+    },
+    "489830": {
+      "name": "The Elder Scrolls V: Skyrim Special Edition",
+      "directX": "11",
+      "notes": "Denenmedi (GameToMac listesinde var). GameToMac DXMT kullanmış; önce D3DMetal ile deneriz."
+    },
+    "1547000": {
+      "name": "Grand Theft Auto: San Andreas – The Definitive Edition",
+      "directX": "11",
+      "notes": "Denenmedi (GameToMac listesinde var). Rockstar Games Launcher gerekir (Wine'da sorunlu olabilir)."
+    },
+    "4921760": {
+      "name": "Heroes of Might and Magic III",
+      "directX": "7",
+      "notes": "Denenmedi (GameToMac listesinde var). Steam numarası GameToMac listesinden, doğrulanmadı (HD Edition'ınki 297000). Eski 2D oyun: wined3d."
+    },
+    "1245620": {
+      "name": "Elden Ring",
+      "directX": "12",
+      "notes": "Denenmedi (GameToMac listesinde var). Easy Anti-Cheat: yalnızca offline oynanabilir (anti-cheat kapatılarak, online'a bağlanmadan)."
+    },
+    "1174180": {
+      "name": "Red Dead Redemption 2",
+      "directX": "12",
+      "notes": "Denenmedi (GameToMac listesinde var). Rockstar Games Launcher gerekir. Yalnızca hikâye modu; Red Dead Online yok. GameToMac Rockstar için ayrı bir grafik katmanı kullanmış."
     }
   }
 }

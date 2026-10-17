@@ -27,8 +27,9 @@ struct GameProfile: Codable, Equatable, Sendable {
 
     /// Arayüzde gösterilen grafik yolu
     var rendererDescription: String {
+        // D3DMetal yalnızca DirectX 10–12'yi çevirir; 9 ve öncesi (DirectDraw = "7") Wine'ın wined3d'sine gider.
         switch directX {
-        case "9": "DirectX 9 → wined3d (OpenGL)"
+        case let v? where (Int(v) ?? 99) <= 9: "DirectX \(v) → wined3d (OpenGL)"
         case let v?: "DirectX \(v) → D3DMetal 4 (Metal)"
         case nil: "D3DMetal 4 (DirectX 10–12) / wined3d (DirectX 9 ve öncesi)"
         }
