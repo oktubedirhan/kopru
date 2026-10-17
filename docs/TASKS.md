@@ -439,6 +439,11 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - `rendererDescription`: DirectX 9 ve öncesi (8, DirectDraw "7") wined3d gösteriliyor. Test eklendi; 30/30.
 - Sıradaki: kullanıcı hangi oyunlara sahipse onlardan biriyle (ör. Skyrim SE, AoE II DE) ilk deneme.
 
+## 2026-10-18 — Cmd+Space'te "Köprü" aranınca Siri AI çöküyor (kullanıcı)
+- `~/Library/Logs/DiagnosticReports/Siri AI-*.ips` (4 rapor, 17–18 Eki): hepsi aynı yer, **Apple'ın kendi kodunda**: `EXC_BAD_ACCESS`, ana iş parçacığı, `swift_task_isCurrentExecutor…` ← `CampoUIInternal`/`SpotlightUIInternal` ← `NSApplication sendEvent`. Köprü'nün kodu bu süreçte çalışmıyor.
+- Sistem: macOS 27.0.1 (26A434), dil en-TR + tr-TR, klavye Turkish-QWERTY-PC. Dil/klavye çökme yığınında görünmüyor → büyük ihtimalle dil değil, Siri AI aramasının hatası.
+- Henüz bilinmiyor: yalnızca "Köprü" aramasında mı (ö/ü?), yoksa başka uygulamalarda da mı. Kullanıcı deneyecek: "Safari", "kopru", "köprü".
+
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 akşam: Batman AA)
 - **Asylum (35140) çalışıyor, ses bozuk.** Başlatma: `cd …/Batman Arkham Asylum GOTY/Binaries && SteamAppId=35140 SteamGameId=35140 scripts/kwine steam "$PWD/BmLauncher.exe"` → başlatıcıda Play. Wine Mono 10.4.1 prefix'te kurulu, `wine.env`'de `mscoree` artık kapalı değil.
