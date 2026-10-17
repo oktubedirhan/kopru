@@ -325,6 +325,13 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - **Denenmedi (kullanıcı oyun testlerini erteledi):** Oyna/Steam'i Kapat/Zorla Kapat/Yeniden Başlat düğmeleri; FPS göstergesinin oyunda görünmesi ve FPS sınırının etkisi.
 - README'ye "Kullanım" bölümü eklendi.
 
+## 2026-10-17 — Git: ilk commit + gizli GitHub deposu ✅
+- Kullanıcı istedi: yerel commit + GitHub. Depo: **https://github.com/oktubedirhan/kopru** (private), dal `main`, `origin` ayarlı.
+- İlk commit `263a7d4`: 42 dosya (betikler, yamalar 0001–0005, tools kaynakları, App + testler, docs, simge).
+- Depoya girmeyenler (`.gitignore`): `build/`, `App/.build/`, `tools/**/*.exe` (build.sh ile yeniden üretilir). Wine runtime, D3DMetal (Apple lisansı), oyunlar, save'ler zaten repo dışında (`~/Library/Application Support/Kopru/`).
+- Push öncesi gizli bilgi taraması yapıldı (şifre/anahtar yok). Notlarda Steam hesap numarası (accountid) geçiyor; depo gizli.
+- Bundan sonra: her çalışan aşamadan sonra `git add -A && git commit` + `git push`.
+
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 güncellemesi)
 - Witcher 3 (build 25773555) **çalışıyor**: Steam açıkken `scripts/kwine steam 'C:\Program Files (x86)\Steam\steam.exe' -applaunch 292030 --launcher-skip`. Orijinal Steam dosyaları, proxy yok.
