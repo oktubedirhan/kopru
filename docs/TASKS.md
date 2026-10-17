@@ -426,6 +426,11 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
   - Runtime ve kaynak **orijinal haline döndürüldü** (kurulu i386 `dsound.dll` 03:52 tarihli asıl dosya; kaynakta `kopru` yok).
 - Arama: Asylum'a özel bir Wine ses çözümü bulunamadı.
 
+## 2026-10-17 — GameToMac silinebilir mi? (yalnızca okuma ile kontrol)
+- GameToMac kütüphanesinde (`~/Library/Application Support/Game Library/Games/`) **yalnızca `witcher3`** var (prefix 69 GB; appmanifest 292030 + 228980 Steamworks Redistributables). Taşınacak başka oyun yok.
+- Oradaki Witcher 3 save/ayarları (`…/users/crossover/Documents/The Witcher 3`) `~/.kopru/backups/witcher3-saves-2026-10-17/gametomac/` ile `diff -rq` → **aynı**.
+- Öneri: oyunu kullanıcı GameToMac arayüzünden silsin (biz dokunmuyoruz); uygulama (737 MB) kaynak kodu başvurusu olarak şimdilik kalabilir. Not: bizim kopya APFS klonu, bloklar ortak → silince açılan yer 69 GB'tan az olabilir (önce/sonra `df -h /`). Boş yer şu an 575 GB.
+
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 akşam: Batman AA)
 - **Asylum (35140) çalışıyor, ses bozuk.** Başlatma: `cd …/Batman Arkham Asylum GOTY/Binaries && SteamAppId=35140 SteamGameId=35140 scripts/kwine steam "$PWD/BmLauncher.exe"` → başlatıcıda Play. Wine Mono 10.4.1 prefix'te kurulu, `wine.env`'de `mscoree` artık kapalı değil.
