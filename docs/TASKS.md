@@ -442,7 +442,8 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 ## 2026-10-18 — Cmd+Space'te "Köprü" aranınca Siri AI çöküyor (kullanıcı)
 - `~/Library/Logs/DiagnosticReports/Siri AI-*.ips` (4 rapor, 17–18 Eki): hepsi aynı yer, **Apple'ın kendi kodunda**: `EXC_BAD_ACCESS`, ana iş parçacığı, `swift_task_isCurrentExecutor…` ← `CampoUIInternal`/`SpotlightUIInternal` ← `NSApplication sendEvent`. Köprü'nün kodu bu süreçte çalışmıyor.
 - Sistem: macOS 27.0.1 (26A434), dil en-TR + tr-TR, klavye Turkish-QWERTY-PC. Dil/klavye çökme yığınında görünmüyor → büyük ihtimalle dil değil, Siri AI aramasının hatası.
-- Henüz bilinmiyor: yalnızca "Köprü" aramasında mı (ö/ü?), yoksa başka uygulamalarda da mı. Kullanıcı deneyecek: "Safari", "kopru", "köprü".
+- Kullanıcı: "kopru" (noktasız) aramasında da kapandı → ö/ü değil. Safari denemesi yapılmadı.
+- Çözüm yolu: masaüstüne kısayol `~/Desktop/Köprü` → `build/Köprü.app` (sembolik bağlantı; `build-app.sh` paketi silip yeniden kurduğu için Finder takma adı yerine bu). Dock'a da sürüklenebilir.
 
 ---
 ## 📌 Yeni oturum için özet (2026-10-17 akşam: Batman AA)
