@@ -473,7 +473,20 @@ Kullanıcı oyun testlerini durdurup "kodda eksik kalanları yap" dedi. TASKS'ta
 - Önce tarama (geçmiş dahil): şifre/token/anahtar yok; büyük dosya yalnızca uygulama simgesi; Apple/GameToMac/oyun dosyası yok. Açığa çıkanlar kullanıcıya gösterildi ve onaylandı: commit yazar adı/e-postası, Steam hesap numarası (TASKS.md), GameToMac inceleme notları, Mac kullanıcı adı.
 - CLAUDE.md, README, KURULUM.md: "dağıtılmaz" → "kaynak açık, hazır paket dağıtılmaz". `gh repo edit --visibility public`.
 
+## 2026-10-21 — Asylum ses deneyi başlatıldı, ölçüm alınamadı (kullanıcı ertele dedi)
+- Diag yaması uygulandı, `build-crossover-wine.sh build` tamam; i386 `dsound.dll` strip'lenip runtime'a kondu (asıl dosya `dsound.dll.kopru-orig` olarak yedeklendi). strip yolu: `~/.kopru/toolchains/llvm-mingw-20261006-ucrt-macos-universal/bin/llvm-strip` (PATH'te yok).
+- **Deneme A, 1. başlatma:** `WINEDEBUG=err+all,+kopru` ile BmLauncher → Play → oyun "Steam'e giriş yapmamışsın" dedi. Sebep: **Steam kapalıydı**; Asylum Steam API'ye (Cloud save) bağlanmadan açılmıyor. → Önce Steam açılmalı (`kwine steam … steam.exe -cef-disable-gpu`), sonra oyun. Steam bu oturumda temiz ortamla açıldı (18:07 `Logged On 'OK'`), yani "Steam'i yeniden başlat" maddesi de karşılandı.
+- **2. başlatma:** Steam log'unda 18:04–18:08 arası bir Asylum oturumu görünüyor (Steam'den `LaunchApp 35140` ile başlamış; ölçüm ortam değişkeni olmadan). Bizim kwine başlatmasında `kopru` satırı **0**; log'da oyun süreci 18:08'de kapanmış. Hangi pencerenin hangi başlatmaya ait olduğu netleşmeden kullanıcı deneyi erteledi.
+  - Not: BmLauncher oyunu `ShellExecute` ile açıyor; oyunun çıktısının bizim log dosyasına gelip gelmediği doğrulanmadı. Gelmiyorsa ölçüm için ya oyunu (`ShippingPC-BmGame.exe`) doğrudan başlatmak ya da Steam'i `WINEDEBUG=+kopru` ile açmak gerekir.
+- **Geri alındı:** asıl `dsound.dll` (17 Eki 03:52) yerinde, kaynakta `kopru` yok (`patch -R`). Build klasöründe diag nesneleri kalmış olabilir; sonraki `build` değişen dosyaları yeniden derler.
+- **Sonuç: denendi, ölçüm yok.** Doppler hipotezi hâlâ açık.
+
 ---
+## 📌 Yeni oturum için özet (2026-10-21: Batman AA ses deneyi yarım)
+- Aşağıdaki 2026-10-17 akşam özetindeki ses deneyi adımları aynen geçerli; ek olarak: **önce Steam açık ve girişli olmalı**, sonra oyun. strip için llvm-mingw'nin tam yolunu kullan.
+- Oyunun çıktısının log'a düştüğünü ilk 1 dk'da kontrol et (`grep -c kopru`); 0 ise oyunu doğrudan exe ile ya da Steam'i ölçüm ortamıyla başlat.
+- Yedek testi, Witcher 3 Kayıtlar kontrolü ve kullanıcının sahip olduğu oyunlarla ilk deneme hâlâ sırada (oyun listesi kullanıcıdan bekleniyor).
+
 ## 📌 Yeni oturum için özet (2026-10-17 akşam: Batman AA)
 - **Asylum (35140) çalışıyor, ses bozuk.** Başlatma: `cd …/Batman Arkham Asylum GOTY/Binaries && SteamAppId=35140 SteamGameId=35140 scripts/kwine steam "$PWD/BmLauncher.exe"` → başlatıcıda Play. Wine Mono 10.4.1 prefix'te kurulu, `wine.env`'de `mscoree` artık kapalı değil.
 - **Steam yeniden başlatılmalı:** açık Steam eski ortamla (mscoree kapalı) başladı; Steam/Köprü "Oyna" ile Asylum açmak için önce Steam'i kapatıp aç (Köprü'de Steam'i Kapat → Aç).
